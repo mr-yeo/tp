@@ -569,16 +569,16 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1a. Download the JAR file and copy it into an empty folder.
+   1. Download the JAR file and copy it into an empty folder.
 
-   1b. Double-click the JAR file.<br>
+   2. Double-click the JAR file.<br>
       Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
 
 2. Saving window preferences
 
-   2a. Resize the window to an optimal size. Move the window to a different location. Close the window.
+   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   2b. Relaunch the app by double-clicking the JAR file.<br>
+   2. Relaunch the app by double-clicking the JAR file.<br>
        Expected: The most recent window size and location are retained.
 
 3. _{ more test cases …​ }_
@@ -589,17 +589,54 @@ testers are expected to do more *exploratory* testing.
 
    Prerequisites: List all persons using the `list-students` command, with multiple persons in the list.
 
-   1a. Test case: `delete 1`<br>
+   1. Test case: `delete 1`<br>
       Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
 
-   1b. Test case: `delete 0`<br>
+   2. Test case: `delete 0`<br>
       Expected: No person is deleted. The status message shows error details.
 
-   1c. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
+   3. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
       Expected: Similar to previous.
 
 2. _{ more test cases …​ }_
 
+### Commands after searching
+This demonstrates how commands work if the list of students or parents is changed. `delete-student` is used as an example, but any command with `INDEX` applies.
+1. Run `clear` to demonstrate this on an empty Tutoria.
+2. Run `add-student n/John p/91234567 e/john@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+3. Run `add-student n/Jane p/91234567 e/jane@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+Expected: The list should contain the student `John` at index 1 and student `Jane` at index 2.
+
+4. Run `search Jane`
+Expected: This should make the list only contain the student `Jane` at index 1.
+
+5. Run `delete-student 1`
+Expected: `Jane` should be deleted and the list should show student `John` at index 1. 
+
+Note that `delete-student`'s `INDEX` considered the index after `search` was used which contained only `Jane` at index 1, not the actual list which contained `John` and `Jane` at index 1 and 2 respectively.
+This all functions similarly with parents.
+
+### Undo and Redo
+The details how Undo and Redo should work
+1. Undoing and Redoing a command
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   2. Run `undo`.
+      Expected: Tutoria should be restored to its original set of students and parents, undoing the `add-student` command.
+    
+   3. Run `redo`.
+      Expected: Tutoria should be restored to its new set of students and parents after the `add-student` command, redoing the previous `undo`.
+    
+   4. Run `list-students`
+   5. Run `undo`.
+      Expected: Tutoria should undo the `add-student` command. Essentially, `list-students` did not change the students or parents, hence `undo` ignores it and acts on the last command that did. This is the same for `redo`.
+
+2. Redoing after undoing and running a command
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   2. Run `undo`.
+   3. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   4. Run `redo`.
+      Expected: Tutoria should indicate that there's nothing to redo, as the new `add-student` overwrites the old `add-student`.
+   .
 ### Saving data
 
 1. Dealing with missing/corrupted data files
