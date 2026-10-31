@@ -24,7 +24,7 @@ public class AddContactCommand extends Command {
     public static final String MESSAGE_SUCCESS = "New parent added: %1$s";
     public static final String MESSAGE_DUPLICATE_PARENT = "This parent already exists in Tutoria.";
     public static final String MESSAGE_STUDENT_ALREADY_LINKED =
-            "This student already has a parent in Tutoria.";
+            "This student already has two parents in Tutoria.";
     private final ParentContact contact;
     private final Index linkIndex;
 
@@ -57,7 +57,8 @@ public class AddContactCommand extends Command {
         }
         final String resolvedStudentId = studentId;
         if (resolvedStudentId != null && model.getParentContactList().stream()
-                .anyMatch(p -> resolvedStudentId.equals(p.getLinkedStudentId()))) {
+                .filter(p -> resolvedStudentId.equals(p.getLinkedStudentId()))
+                .count() >= 2) {
             throw new CommandException(MESSAGE_STUDENT_ALREADY_LINKED);
         }
         model.addParentContact(toAdd);

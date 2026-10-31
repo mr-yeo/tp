@@ -107,7 +107,7 @@ The `UI` component,
 * The list comes from `HelpCommand.COMMAND_SUMMARIES`. Each `CommandSummary` holds a command word, its parameter format and a short description. When adding a new command, add a `CommandSummary` for it there so that it shows up in the list.
 * The list is read-only. `CommandListPanel` wraps it in an unmodifiable `ObservableList` so the `ListView` cannot change it.
 * Executing `help` returns a `CommandResult` with `isShowHelp()` set, and `MainWindow` then switches to the Help tab instead of opening a separate window.
-* The banner above the list points users to `F1` for the full user guide. `F1` is the accelerator of the **F1 User Guide** menu item, which opens `HelpWindow` with the user guide URL and a button to copy it. The panel does not open a browser itself, so it does not depend on `java.awt.Desktop` or the system clipboard.
+* The banner above the list points users to `F1` for the full user guide. `F1` is the accelerator of the **F1 User Guide** menu item, which opens `HelpWindow` with the user guide URL and a button to copy it. `HelpWindow` has its own scene, so the main window's `Esc` filter never sees its key presses; it adds its own filter that hides the window on `Esc`. The panel does not open a browser itself, so it does not depend on `java.awt.Desktop` or the system clipboard.
 
 ### Logic component
 

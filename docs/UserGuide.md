@@ -88,7 +88,7 @@ Tutoria helps tutors maintain student and parent records, manage tasks and remin
 
 * The main window has four tabs: **Students**, **Parents**, **Schedule**, and **Help**. Tutoria switches to the relevant tab after a successful command. For example, `list-parents` shows the Parents tab and `list-schedule` shows the Schedule tab.
 
-* Tutoria can be used without a mouse. Press `F1` from anywhere in the main window to open the User Guide. Press `Tab` to move between parts of the window; the part that will receive your key presses is outlined in light blue. To use the menu bar, press `Alt+F` for the **File** menu or `Alt+U` for the **F1 User Guide** menu, or press `F10` and use the arrow keys, then press `Enter` to choose an item or `Esc` to close the menu. To quit, press `Esc` from anywhere in the main window, even while scrolling a list or the timetable, to open the **File** menu with **Exit** selected, then press `Enter`. To read a long result, press `Tab` to move into the result box, then use the up and down arrow keys to scroll a line at a time, `Page Up` and `Page Down` to scroll a screen at a time, or `Home` and `End` to jump to the start or end. The timetable and the reminder pop-up can both be scrolled with the keyboard, as described in [`list-schedule`](#listing-scheduled-sessions-list-schedule) and [Reminder pop-ups](#reminder-pop-ups).
+* Tutoria can be used without a mouse. Press `F1` from anywhere in the main window to open the User Guide window, and press `Esc` to close it again. Press `Tab` to move between parts of the window; the part that will receive your key presses is outlined in light blue. To use the menu bar, press `Alt+F` for the **File** menu or `Alt+U` for the **F1 User Guide** menu, or press `F10` and use the arrow keys, then press `Enter` to choose an item or `Esc` to close the menu. To quit, press `Esc` from anywhere in the main window, even while scrolling a list or the timetable, to open the **File** menu with **Exit** selected, then press `Enter`. To read a long result, press `Tab` to move into the result box, then use the up and down arrow keys to scroll a line at a time, `Page Up` and `Page Down` to scroll a screen at a time, or `Home` and `End` to jump to the start or end. The timetable and the reminder pop-up can both be scrolled with the keyboard, as described in [`list-schedule`](#listing-scheduled-sessions-list-schedule) and [Reminder pop-ups](#reminder-pop-ups).
 </div>
 
 ### General commands
@@ -626,7 +626,7 @@ Format: `clear`
 **A**: Tutoria does not reconstruct lessons or assessments from existing students or sessions. Historical records must have been recorded in Tutoria.
 
 **Q**: How do I open the User Guide?<br>
-**A**: Press `F1`, or use the **F1 User Guide** menu. The `help` command shows the list of commands in the Help tab instead.
+**A**: Press `F1`, or use the **F1 User Guide** menu. Press `Esc` to close the User Guide window. The `help` command shows the list of commands in the Help tab instead.
 
 --------------------------------------------------------------------------------------------------------------------
 

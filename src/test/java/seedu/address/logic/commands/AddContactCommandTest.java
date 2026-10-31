@@ -76,7 +76,11 @@ public class AddContactCommandTest {
 
         ParentContact anotherParent = new ParentContact(new Name("Peter Tan"), new Phone("91234568"),
                 new Email("peter@example.com"), null, null, List.of());
+        new AddContactCommand(anotherParent, Index.fromOneBased(1)).execute(model);
+
+        ParentContact yetAnotherParent = new ParentContact(new Name("Pete Tan"), new Phone("91234568"),
+                new Email("peter@example.com"), null, null, List.of());
         assertThrows(CommandException.class, AddContactCommand.MESSAGE_STUDENT_ALREADY_LINKED, () ->
-                new AddContactCommand(anotherParent, Index.fromOneBased(1)).execute(model));
+                new AddContactCommand(yetAnotherParent, Index.fromOneBased(1)).execute(model));
     }
 }

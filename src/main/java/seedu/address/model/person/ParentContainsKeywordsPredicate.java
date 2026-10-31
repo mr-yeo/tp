@@ -38,7 +38,7 @@ public class ParentContainsKeywordsPredicate implements Predicate<ParentContact>
         this.parentContact = parentContact;
         return containsIgnoreCase(parentContact.getName().fullName, keyword)
                 || containsIgnoreCase(parentContact.getPhone().value, keyword)
-                || containsIgnoreCase(parentContact.getEmail().value, keyword)
+                || containsIgnoreCase(parentContact.getEmail() == null ? null : parentContact.getEmail().value, keyword)
                 || containsIgnoreCase(parentContact.getLinkedStudentName(), keyword)
                 || checkIfRequirementsContainKeyword(parentContact.getRequirements(), keyword);
     }

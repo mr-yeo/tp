@@ -43,7 +43,6 @@ public class EditParentCommandParserTest {
         assertFailure(" 1 n/", Name.MESSAGE_CONSTRAINTS);
         assertFailure(" 1 n/Mary#", Name.MESSAGE_CONSTRAINTS);
         assertFailure(" 1 p/12", Phone.MESSAGE_CONSTRAINTS);
-        assertFailure(" 1 e/", Email.MESSAGE_CONSTRAINTS);
         assertFailure(" 1 e/invalid", Email.MESSAGE_CONSTRAINTS);
         assertFailure(" 1 link/0", "Student index must be a positive integer.");
         assertFailure(" 1 link/abc", "Student index must be a positive integer.");

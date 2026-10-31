@@ -101,11 +101,25 @@ public class ParserUtil {
      */
     public static Email parseEmail(String email) throws ParseException {
         requireNonNull(email);
+        return getEmail(email);
+    }
+
+    private static Email getEmail(String email) throws ParseException {
         String trimmedEmail = email.trim();
         if (!Email.isValidEmail(trimmedEmail)) {
             throw new ParseException(Email.MESSAGE_CONSTRAINTS);
         }
         return new Email(trimmedEmail);
+    }
+
+    /**
+     * Parses a {@code String email} in when it can be optional. Uses {@code parseEmail} if not empty.
+     */
+    public static Email parseOptionalEmail(String email) throws ParseException {
+        if (email.isEmpty()) {
+            return Email.getNone();
+        }
+        return getEmail(email);
     }
 
     /**

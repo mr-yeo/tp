@@ -1,5 +1,7 @@
 package seedu.address.ui;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.logging.Logger;
 
 import javafx.fxml.FXML;
@@ -7,6 +9,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
 import seedu.address.commons.core.LogsCenter;
 
@@ -20,6 +24,7 @@ public class HelpWindow extends UiPart<Stage> {
 
     private static final Logger logger = LogsCenter.getLogger(HelpWindow.class);
     private static final String FXML = "HelpWindow.fxml";
+    private static final KeyCombination ESCAPE_KEY = KeyCombination.valueOf("Esc");
 
     @FXML
     private Button copyButton;
@@ -35,6 +40,8 @@ public class HelpWindow extends UiPart<Stage> {
     public HelpWindow(Stage root) {
         super(FXML, root);
         helpMessage.setText(HELP_MESSAGE);
+        assert getRoot().getScene() != null : "HelpWindow.fxml must give the help window a scene";
+        getRoot().getScene().addEventFilter(KeyEvent.KEY_PRESSED, this::handleEscape);
     }
 
     /**
@@ -80,6 +87,19 @@ public class HelpWindow extends UiPart<Stage> {
      */
     public void hide() {
         getRoot().hide();
+    }
+
+    /**
+     * Hides the help window when Esc is pressed, so a keyboard user can close it without a mouse.
+     */
+    void handleEscape(KeyEvent event) {
+        requireNonNull(event);
+        if (!ESCAPE_KEY.match(event)) {
+            return;
+        }
+        logger.fine("Esc pressed in the help window, hiding it");
+        event.consume();
+        hide();
     }
 
     /**

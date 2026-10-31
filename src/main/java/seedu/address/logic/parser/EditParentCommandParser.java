@@ -51,7 +51,7 @@ public class EditParentCommandParser implements Parser<EditParentCommand> {
         Phone phone = map.getValue(PREFIX_PHONE).isPresent()
                 ? ParserUtil.parsePhone(map.getValue(PREFIX_PHONE).get()) : null;
         Email email = map.getValue(PREFIX_EMAIL).isPresent()
-                ? ParserUtil.parseEmail(map.getValue(PREFIX_EMAIL).get()) : null;
+                ? ParserUtil.parseOptionalEmail(map.getValue(PREFIX_EMAIL).get()) : null;
         boolean linkSpecified = map.getValue(PREFIX_LINK).isPresent();
         String linkValue = map.getValue(PREFIX_LINK).orElse("");
         Index linkIndex = linkValue.isEmpty() ? null : parseIndex(linkValue, "Student");
