@@ -562,12 +562,6 @@ release JAR are required.
 3. Enter `exit`.
    Expected: Tutoria closes.
 
-<<<<<<< Updated upstream
-   1. Download the JAR file and copy it into an empty folder.
-
-   2. Double-click the JAR file.<br>
-      Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
-=======
 ### Managing students and parents
 
 1. Add a student with `add-student n/Manual Test p/91234560 e/manual@example.com a/1 Test St s/Mathematics`.
@@ -579,16 +573,9 @@ release JAR are required.
    `add-parent n/Manual Parent p/91234561 link/<STUDENT_INDEX> r/Call before lessons`.
    Expected: The parent appears in `list-parents` with the requirement and student link. `view-child <PARENT_INDEX>`
    selects the linked student.
->>>>>>> Stashed changes
 
 ### Tasks and reminders
 
-<<<<<<< Updated upstream
-   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
-
-   2. Relaunch the app by double-clicking the JAR file.<br>
-       Expected: The most recent window size and location are retained.
-=======
 1. Use a student index from `list-students`. Run `add-task <STUDENT_INDEX> task/Prepare revision`, then use the task ID
    shown in the student details with `mark-task <STUDENT_INDEX> tid/<TASK_ID> status/done`.
    Expected: The task is shown as done. Run `delete-task <STUDENT_INDEX> tid/<TASK_ID>` and verify it is removed.
@@ -597,7 +584,6 @@ release JAR are required.
    pop-up; verify the reminder remains until removed with `delete-reminder <ID>`.
 
 ### Scheduling and attendance
->>>>>>> Stashed changes
 
 1. For a student without that weekly time slot, run `schedule-student <STUDENT_INDEX> day/Monday from/16-00 to/17-00`,
    then `list-schedule`.
@@ -610,55 +596,7 @@ release JAR are required.
 4. Try a future date or a date that falls on a different weekday.
    Expected: Tutoria reports an error and leaves the lesson unchanged.
 
-<<<<<<< Updated upstream
-### Managing Students and Parents
-1. Students
-   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
-   Expected: The student `John Tan` is created and appears in the `student` tab
-   2. Run `edit-student 1 p/12345678 g/`.
-   Expected: `John Tan`'s number changes from `91234567` to `12345678` and his grade level is removed.
-   3. Run `add-task 1 task/do homework`.
-   Expected: The task `do homework` should be marked in red on `John Tan`'s profile's right.
-   4. Run `mark-task 1 tid/1 status/done`.
-   Expected: `do homework` should now be turned green.
-   5. Run `mark-task 1 tid/1 status/not done`.
-   Expected: `do homework` should now be turned red again.
-   6. Run `delete-task 1 tid/1`.
-   Expected: `do homework` should be gone from `John Tan`'s profile.
-   7. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics`.
-   8. Run `search Jane`.
-   Expected: `John Tan` disappears and only `Jane Tan` is left in the `students` tab.
-   9. Run `list-students`.
-   Expected: The student tab should show the same list as after step 7.
-   10. Run `delete-student 2`.
-   Expected: `Jane Tan` is removed from Tutoria.
-   11. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
-   Expected: `John Tan` is removed from Tutoria.
-
-2. Parents
-   1. Run `add-parent n/Mrs Tan p/98765432`.
-   Expected: The parent `Mrs Tan` is created and appears in the `parents` tab.
-   2. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
-   3. Run `edit-parent 1 p/12345678 link/1`.
-   Expected: `Mrs Tan`'s number changes from `98765432` to `12345678`, and is linked to `John Tan`.
-   4. Run `view-child`.
-   Expected: Tuturia automatically switches to the `students` tab and selects `Mrs Tan`'s linked student, `John Tan`.
-   5. Run `add-parent n/Mr Tan p/98765432 link/1`.
-   6. Run `add-parent n/Mrs Lim p/98765432 link/1`.
-   Expected: Tutoria rejects `add-parent n/Mrs Tan p/98765432` as `John Tan` already has two parents, `Mrs Tan` and `Mr Tan`.
-   7. Run `search Mrs Tan`.
-   Expected: Only `Mr Tan` is shown.
-   8. Run `delete-parent 1`.
-   Expected: `Mr Tan` is removed from the `parents` tab.
-   9. Run `list-parents`
-   Expected: `Mrs Tan` is now shown in the `parents` tab.
-   10. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
-   Expected: `Mrs Tan` is removed from Tutoria.
-
-### Deleting a person
-=======
 ### Assessments and statistics
->>>>>>> Stashed changes
 
 1. Record an assessment for a student, replacing `<DATE>` with a date that is not in the future:
    `record-assessment <STUDENT_INDEX> date/<DATE> subject/Mathematics category/Test title/Manual score/80 max/100`.
@@ -672,18 +610,6 @@ release JAR are required.
 
 ### Deleting a student
 
-<<<<<<< Updated upstream
-   1. Test case: `delete 1`<br>
-      Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
-
-   2. Test case: `delete 0`<br>
-      Expected: No person is deleted. The status message shows error details.
-
-   3. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
-      Expected: Similar to previous.
-
-2. _{ more test cases …​ }_
-=======
 1. Using the test student from the earlier steps, run `list-students` and note their displayed index.
 2. Run `delete-student <STUDENT_INDEX>`.
    Expected: The student and recurring session disappear. Their lesson and assessment history remains in
@@ -699,45 +625,93 @@ release JAR are required.
 2. Add a uniquely named test student, then run `undo` followed by `list-students`.
    Expected: The newly added student is absent. Run `redo` and `list-students`.
    Expected: The student is restored.
->>>>>>> Stashed changes
+
+### Student and parent walkthrough
+
+This walkthrough uses fixed indices, so it starts from an empty Tutoria. Run `clear` first.
+
+1. Students
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
+      Expected: The student `John Tan` is created and appears in the `Students` tab.
+   2. Run `edit-student 1 p/12345678 g/`.
+      Expected: `John Tan`'s phone number changes from `91234567` to `12345678` and his grade level is removed.
+   3. Run `add-task 1 task/do homework`.
+      Expected: The task `do homework` appears in red on the right of `John Tan`'s card.
+   4. Run `mark-task 1 tid/1 status/done`.
+      Expected: `do homework` turns green.
+   5. Run `mark-task 1 tid/1 status/not done`.
+      Expected: `do homework` turns red again.
+   6. Run `delete-task 1 tid/1`.
+      Expected: `do homework` is removed from `John Tan`'s card.
+   7. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics`.
+      Expected: `Jane Tan` is added at index 2.
+   8. Run `search Jane`.
+      Expected: `John Tan` disappears and only `Jane Tan` is left in the `Students` tab.
+   9. Run `list-students`.
+      Expected: The `Students` tab shows the same list as after step 7.
+   10. Run `delete-student 2`.
+       Expected: `Jane Tan` is removed from Tutoria.
+   11. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
+       Expected: `John Tan` is removed from Tutoria.
+
+2. Parents
+   1. Run `add-parent n/Mrs Tan p/98765432`.
+      Expected: The parent `Mrs Tan` is created and appears in the `Parents` tab.
+   2. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
+   3. Run `edit-parent 1 p/12345678 link/1`.
+      Expected: `Mrs Tan`'s phone number changes from `98765432` to `12345678`, and she is linked to `John Tan`.
+   4. Run `view-child 1`.
+      Expected: Tutoria switches to the `Students` tab and selects `Mrs Tan`'s linked student, `John Tan`.
+   5. Run `add-parent n/Mr Tan p/98765432 link/1`.
+      Expected: `Mr Tan` is added and linked to `John Tan`.
+   6. Run `add-parent n/Mrs Lim p/98765432 link/1`.
+      Expected: Tutoria rejects the command because `John Tan` already has two parents, `Mrs Tan` and `Mr Tan`.
+   7. Run `search Mrs Tan`.
+      Expected: Only `Mrs Tan` is shown in the `Parents` tab, because `search` matches the whole phrase `Mrs Tan`.
+   8. Run `delete-parent 1`.
+      Expected: `Mrs Tan` is removed.
+   9. Run `list-parents`.
+      Expected: Only `Mr Tan` is shown in the `Parents` tab.
+   10. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
+       Expected: `Mr Tan` and `John Tan` are removed from Tutoria.
 
 ### Commands after searching
-This demonstrates how commands work if the list of students or parents is changed. `delete-student` is used as an example, but any command with `INDEX` applies.
-1. Run `clear` to demonstrate this on an empty Tutoria.
+
+This shows how index-based commands behave after the displayed list is filtered. `delete-student` is used as an example,
+but any command that takes an `INDEX` behaves the same way, including the parent commands.
+
+1. Run `clear` to start from an empty Tutoria.
 2. Run `add-student n/John p/91234567 e/john@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
 3. Run `add-student n/Jane p/91234567 e/jane@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
-Expected: The list should contain the student `John` at index 1 and student `Jane` at index 2.
-
-<<<<<<< Updated upstream
+   Expected: The list contains `John` at index 1 and `Jane` at index 2.
 4. Run `search Jane`.
-Expected: This should make the list only contain the student `Jane` at index 1.
-
+   Expected: The list contains only `Jane`, at index 1.
 5. Run `delete-student 1`.
-Expected: `Jane` should be deleted and the list should show student `John` at index 1.
-Note that `delete-student`'s `INDEX` considered the index after `search` was used which contained only `Jane` at index 1, not the actual list which contained `John` and `Jane` at index 1 and 2 respectively.
-This all functions similarly with parents.
+   Expected: `Jane` is deleted and the list shows `John` at index 1. `INDEX` refers to the filtered list shown after
+   `search`, which contained only `Jane`, not the full list in which `Jane` was at index 2.
 
-### Undo and Redo
-The details how Undo and Redo should work
-1. Undoing and Redoing a command
+### Undo and redo walkthrough
+
+1. Undoing and redoing a command
    1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
    2. Run `undo`.
-      Expected: Tutoria should be restored to its original set of students and parents, undoing the `add-student` command.
-    
+      Expected: Tutoria returns to its previous set of students and parents, undoing the `add-student` command.
    3. Run `redo`.
-      Expected: Tutoria should be restored to its new set of students and parents after the `add-student` command, redoing the previous `undo`.
-    
-   4. Run `list-students`
+      Expected: Tutoria restores the set of students and parents after the `add-student` command.
+   4. Run `list-students`.
    5. Run `undo`.
-      Expected: Tutoria should undo the `add-student` command. Essentially, `list-students` did not change the students or parents, hence `undo` ignores it and acts on the last command that did. This is the same for `redo`.
-
-2. Redoing after undoing and running a command
+      Expected: Tutoria undoes the `add-student` command. `list-students` did not change any students or parents, so
+      `undo` skips it and acts on the last command that did. `redo` behaves the same way.
+2. Redoing after undoing and running another command
    1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
    2. Run `undo`.
    3. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
    4. Run `redo`.
-      Expected: Tutoria should indicate that there's nothing to redo, as the new `add-student` for `Jane Tan` overwrites the old `add-student` for `John Tan`.
-=======
+      Expected: Tutoria reports `Nothing to redo!`, because the new `add-student` for `Jane Tan` replaces the undone
+      `add-student` for `John Tan`.
+
+### Saving data
+
 1. In the test home folder, add a uniquely named student and then close Tutoria. Relaunch it from the same folder and run
    `list-students`.
    Expected: The student is still present, confirming that data-changing commands are saved automatically.
@@ -749,4 +723,3 @@ The details how Undo and Redo should work
    Expected: Tutoria logs a loading warning and starts with an empty address book. Do not enter any commands: commands
    that are not read-only, including commands that only display a list, save the in-memory address book and could
    overwrite the invalid file. Close the window and restore the backup before continuing.
->>>>>>> Stashed changes
