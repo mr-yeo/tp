@@ -181,34 +181,32 @@ Classes used by multiple components are in the `seedu.address.commons` package.
 This section describes some noteworthy details on how certain features are implemented.
 
 ### Parent contact editing
+Edits an existing ParentContact in the address book. Users can update the parent's name, phone number, email, 
+linked student, and requirements. Unspecified fields retain their existing values.
 
-`EditParentCommandParser` parses `edit-parent INDEX [n/NAME] [p/PHONE] [e/EMAIL] [link/STUDENT_INDEX] [r/REQUIREMENT]...`.
-The parent index and at least one edit are required. Name, phone, email, and link prefixes are single-valued;
-requirements may be repeated. Unsupported prefixes, duplicate single-valued prefixes, and invalid field values
-produce a specific reason followed by `EditParentCommand.MESSAGE_USAGE`, using the shared `withUsage` helper.
-Parent and student index errors identify which index is invalid.
+1. `EditParentCommandParser` parses the user's input in the format `edit-parent INDEX [n/NAME] [p/PHONE] [e/EMAIL] [link/STUDENT_INDEX] [r/REQUIREMENT]....`
+   * Unsupported prefixes, duplicate single-valued prefixes, and invalid field values are rejected with a specific error reason followed by `EditParentCommand.MESSAGE_USAGE`, using the shared withUsage helper.
+   * Invalid parent and student indices produce error messages identifying which index is invalid.
 
-The command represents omitted and cleared fields separately:
+2. `EditParentCommandParser` distinguishes between fields that are omitted and fields that are explicitly cleared.
+   * Omitted name, phone, and email fields retain their existing values. Supplied values are validated using the existing field validators.
+   * If `link/` is omitted, the existing student link is retained. If a student `index` is supplied, the parent is linked to that student. An empty `link/` clears both the `linked` student `ID` and `name`.
+   * If `r/` is omitted, the existing requirements are retained. One or more supplied requirements replace the existing list in their input order. A single empty `r/` clears all requirements. Empty requirement entries cannot be mixed with other requirements.
 
-* `linkSpecified == false` keeps the existing student link. When true, a non-null `linkIndex` selects a student;
-  a null `linkIndex` (empty `link/`) clears both the linked student ID and name.
-* Null `requirements` keeps the existing list. A nonempty list replaces it in input order; an empty list
-  (a single empty `r/`) clears it. Mixing empty requirement entries with other entries is rejected.
-* Omitted name, phone, and email fields keep their existing values. Supplied values use the existing field validators.
+3. `EditParentCommand` retrieves the parent to edit using its `index` in `Model.getParentContactList()` and resolves the `linked` student using its index in `Model.getFilteredPersonList()`.
+   * The student `link` stores both the student's persistent `ID` and `name`.
+   * `Link` conflicts and duplicate parent identities are checked against the full address book rather than filtered lists, preventing filtering from hiding existing conflicts.
+   * The edited parent is excluded from duplicate identity checks using its ID, allowing the parent to be linked to their current student again.
+   * All validation is completed before `setParentContact` is called, ensuring that validation failures do not partially modify the parent. Execution validation failures also include the reason and usage instructions.
 
-During execution, the parent index resolves against `Model.getParentContactList()` and the student index against
-`Model.getFilteredPersonList()`. The link stores the student's persistent ID and name. Link conflicts and duplicate
-parent identities are checked against the full address book, excluding the edited parent by ID, so filtering cannot
-hide a conflict and selecting the current student again succeeds. All validation completes before `setParentContact`;
-execution validation failures also include the reason and usage instructions.
+4. The updated `ParentContact` preserves the original parent's `ID` and `photo`, along with all fields that were not explicitly edited. The replacement also supports parents without an `email`, as `ParentContact.copy()` preserves optional null email values.
 
-The replacement preserves the parent ID, photo, and omitted fields. Requirements remain a `List<String>` in
-`ParentContact` and a JSON array in `JsonAdaptedParentContact`, so this feature requires no storage migration.
-`ParentContact.copy()` preserves optional null email values so snapshots support parents without email.
+5. The changes are compatible with the existing storage format and do not require a storage migration.
+   * `Requirements` remain stored as a `List<String>` in `ParentContact` and as a `JSON` array in `JsonAdaptedParentContact`.
 
-`EditParentCommandParserTest` covers invalid syntax and error feedback. `EditParentCommandTest` covers field edits,
-link changes and clearing, filtered indices and hidden conflicts, requirement replacement and clearing, validation
-without mutation, photo preservation, JSON save/reload, and undo/redo.
+6. The following tests verify the command's behaviour:
+   * `EditParentCommandParserTest` covers invalid command syntax and error feedback.
+   * `EditParentCommandTest` covers field edits, `student` linking and clearing, filtered `student` indices, hidden `link` conflicts, `requirement` replacement and clearing, validation without mutation, `photo` preservation, `JSON` save/reload, and `undo`/`redo`.
 
 ### Search
 
@@ -231,9 +229,9 @@ This is illustrated in the following diagram:
 
 1. Whenever a command is executed, `SnapshotManager` saves a snapshot of the current `AddressBook` and the relevant command text in separate `List` objects. `currentIndex` tracks the current position in the snapshot history.
 2. `SnapshotManager` is managed by `ModelManager`, which provides access to the snapshot history for `undo` and `redo` operations.
-3. When `UndoCommand` is executed, it uses `ModelManager` to move `currentIndex` back by one position and retrieve a copy of the corresponding `AddressBook` snapshot. The relevant command text is then included in the resulting CommandResult.
+3. When `UndoCommand` is executed, it uses `ModelManager` to move `currentIndex` back by one position and retrieve a copy of the corresponding `AddressBook` snapshot. The relevant command text is then included in the resulting `CommandResult`.
 4. If a new command is executed after some changes have been undone, `currentIndex` is no longer at the end of the snapshot history. In this case, the snapshots beyond `currentIndex` are removed, discarding changes that could previously have been redone.
-5. When `RedoCommand` is executed, it uses `ModelManager` to move `currentIndex` forward by one position and retrieve a copy of the corresponding `AddressBook` snapshot, restoring a previously undone change. The relevant command text is then included in the resulting CommandResult.
+5. When `RedoCommand` is executed, it uses `ModelManager` to move `currentIndex` forward by one position and retrieve a copy of the corresponding `AddressBook` snapshot, restoring a previously undone change. The relevant command text is then included in the resulting `CommandResult`.
 
 This is illustrated in the following diagrams:
 
@@ -569,19 +567,63 @@ testers are expected to do more *exploratory* testing.
 
 1. Initial launch
 
-   1a. Download the JAR file and copy it into an empty folder.
+   1. Download the JAR file and copy it into an empty folder.
 
-   1b. Double-click the JAR file.<br>
+   2. Double-click the JAR file.<br>
       Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
 
 2. Saving window preferences
 
-   2a. Resize the window to an optimal size. Move the window to a different location. Close the window.
+   1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
-   2b. Relaunch the app by double-clicking the JAR file.<br>
+   2. Relaunch the app by double-clicking the JAR file.<br>
        Expected: The most recent window size and location are retained.
 
 3. _{ more test cases …​ }_
+
+### Managing Students and Parents
+1. Students
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
+   Expected: The student `John Tan` is created and appears in the `student` tab
+   2. Run `edit-student 1 p/12345678 g/`.
+   Expected: `John Tan`'s number changes from `91234567` to `12345678` and his grade level is removed.
+   3. Run `add-task 1 task/do homework`.
+   Expected: The task `do homework` should be marked in red on `John Tan`'s profile's right.
+   4. Run `mark-task 1 tid/1 status/done`.
+   Expected: `do homework` should now be turned green.
+   5. Run `mark-task 1 tid/1 status/not done`.
+   Expected: `do homework` should now be turned red again.
+   6. Run `delete-task 1 tid/1`.
+   Expected: `do homework` should be gone from `John Tan`'s profile.
+   7. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics`.
+   8. Run `search Jane`.
+   Expected: `John Tan` disappears and only `Jane Tan` is left in the `students` tab.
+   9. Run `list-students`.
+   Expected: The student tab should show the same list as after step 7.
+   10. Run `delete-student 2`.
+   Expected: `Jane Tan` is removed from Tutoria.
+   11. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
+   Expected: `John Tan` is removed from Tutoria.
+
+2. Parents
+   1. Run `add-parent n/Mrs Tan p/98765432`.
+   Expected: The parent `Mrs Tan` is created and appears in the `parents` tab.
+   2. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
+   3. Run `edit-parent 1 p/12345678 link/1`.
+   Expected: `Mrs Tan`'s number changes from `98765432` to `12345678`, and is linked to `John Tan`.
+   4. Run `view-child`.
+   Expected: Tuturia automatically switches to the `students` tab and selects `Mrs Tan`'s linked student, `John Tan`.
+   5. Run `add-parent n/Mr Tan p/98765432 link/1`.
+   6. Run `add-parent n/Mrs Lim p/98765432 link/1`.
+   Expected: Tutoria rejects `add-parent n/Mrs Tan p/98765432` as `John Tan` already has two parents, `Mrs Tan` and `Mr Tan`.
+   7. Run `search Mrs Tan`.
+   Expected: Only `Mr Tan` is shown.
+   8. Run `delete-parent 1`.
+   Expected: `Mr Tan` is removed from the `parents` tab.
+   9. Run `list-parents`
+   Expected: `Mrs Tan` is now shown in the `parents` tab.
+   10. Run `clear`. Note that this clears _all_ data from Tutoria. You can undo this with `undo`.
+   Expected: `Mrs Tan` is removed from Tutoria.
 
 ### Deleting a person
 
@@ -589,21 +631,49 @@ testers are expected to do more *exploratory* testing.
 
    Prerequisites: List all persons using the `list-students` command, with multiple persons in the list.
 
-   1a. Test case: `delete 1`<br>
+   1. Test case: `delete 1`<br>
       Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
 
-   1b. Test case: `delete 0`<br>
+   2. Test case: `delete 0`<br>
       Expected: No person is deleted. The status message shows error details.
 
-   1c. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
+   3. Other incorrect delete commands to try: `delete`, `delete x`, `...` (where x is larger than the list size)<br>
       Expected: Similar to previous.
 
 2. _{ more test cases …​ }_
 
-### Saving data
+### Commands after searching
+This demonstrates how commands work if the list of students or parents is changed. `delete-student` is used as an example, but any command with `INDEX` applies.
+1. Run `clear` to demonstrate this on an empty Tutoria.
+2. Run `add-student n/John p/91234567 e/john@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+3. Run `add-student n/Jane p/91234567 e/jane@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+Expected: The list should contain the student `John` at index 1 and student `Jane` at index 2.
 
-1. Dealing with missing/corrupted data files
+4. Run `search Jane`.
+Expected: This should make the list only contain the student `Jane` at index 1.
 
-   1a. _{Explain how to simulate missing or corrupted data files and state the expected behavior.}_
+5. Run `delete-student 1`.
+Expected: `Jane` should be deleted and the list should show student `John` at index 1.
+Note that `delete-student`'s `INDEX` considered the index after `search` was used which contained only `Jane` at index 1, not the actual list which contained `John` and `Jane` at index 1 and 2 respectively.
+This all functions similarly with parents.
 
-2. _{ more test cases …​ }_
+### Undo and Redo
+The details how Undo and Redo should work
+1. Undoing and Redoing a command
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   2. Run `undo`.
+      Expected: Tutoria should be restored to its original set of students and parents, undoing the `add-student` command.
+    
+   3. Run `redo`.
+      Expected: Tutoria should be restored to its new set of students and parents after the `add-student` command, redoing the previous `undo`.
+    
+   4. Run `list-students`
+   5. Run `undo`.
+      Expected: Tutoria should undo the `add-student` command. Essentially, `list-students` did not change the students or parents, hence `undo` ignores it and acts on the last command that did. This is the same for `redo`.
+
+2. Redoing after undoing and running a command
+   1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   2. Run `undo`.
+   3. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
+   4. Run `redo`.
+      Expected: Tutoria should indicate that there's nothing to redo, as the new `add-student` for `Jane Tan` overwrites the old `add-student` for `John Tan`.

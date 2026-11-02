@@ -206,7 +206,7 @@ Format: `add-parent n/<NAME> p/<PHONE> [e/<EMAIL>] [link/<STUDENT_INDEX>] [r/<RE
 
 * `<NAME>` and `<PHONE>` follow the same rules as in `add-student`.
 * `<EMAIL>` is optional, but must be valid when supplied.
-* `<STUDENT_INDEX>` is the index of a student in the displayed student list. A student can have at most one parent.
+* `<STUDENT_INDEX>` is the index of a student in the displayed student list. A student can have at most two parents.
 * `<REQUIREMENT>` is a note about the parent's preferences. Give each requirement its own `r/` prefix, with no commas between them.
 * You can add or change the link and requirements later with `edit-parent`.
 
@@ -230,6 +230,7 @@ Format: `edit-parent <INDEX> [n/<NAME>] [p/<PHONE>] [e/<EMAIL>] [link/<STUDENT_I
 * `link/<STUDENT_INDEX>` adds or replaces the link to a student. An empty `link/` removes the link.
 * One or more `r/<REQUIREMENT>` entries replace the whole requirements list. To delete some requirements, supply only the ones you want to keep.
 * A single empty `r/` clears all requirements. Do not combine an empty `r/` with other requirements.
+* A single empty `e/` removes the email.
 * The parent's photo is kept when editing these details.
 * If an edit is invalid, the error message explains why and shows the command format, and nothing is changed.
 
