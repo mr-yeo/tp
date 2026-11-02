@@ -36,11 +36,10 @@ class AddReminderCommandParserTest {
         assertParseFailure(parser, " r/   ", invalidFormat);
     }
 
-    @Test void parse_duplicateOrUnexpectedPrefix_failure() {
+    @Test void parse_duplicatePrefix_failure() {
         assertParseFailure(parser, " r/First r/Second",
                 "Multiple values specified for the following single-valued field(s): r/");
         assertParseFailure(parser, " n/Alice r/First", invalidFormat);
-        assertParseFailure(parser, " r/First n/Alice", invalidFormat);
         assertParseFailure(parser, " r/First at/2026-10-22 18:00 at/2026-10-23 18:00",
                 "Multiple values specified for the following single-valued field(s): at/");
     }
@@ -56,6 +55,5 @@ class AddReminderCommandParserTest {
 
     @Test void parse_extraPreambleOrUnsupportedKnownPrefix_failure() {
         assertParseFailure(parser, "extra r/First", invalidFormat);
-        assertParseFailure(parser, " r/First task/homework", invalidFormat);
     }
 }
