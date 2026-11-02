@@ -46,7 +46,8 @@ public class DeletePhotoCommandTest {
     @Test
     public void execute_personWithTasks_preservesTasks() throws CommandException {
         Person originalPerson = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
-        Person personWithTasks = new PersonBuilder(originalPerson).withTasks("do homework")
+        Person personWithTasks = new PersonBuilder(originalPerson).withPhotoPath("photos/amy.png")
+                .withTasks("do homework")
                 .withTask("revise notes", TaskStatus.DONE).build();
         model.setPerson(originalPerson, personWithTasks);
 
@@ -57,16 +58,14 @@ public class DeletePhotoCommandTest {
     }
 
     @Test
-    public void execute_studentWithoutPhotoUnfilteredList_success() {
+    public void execute_studentWithoutPhoto_failure() {
         Person personWithoutPhoto = model.getFilteredPersonList().get(INDEX_FIRST_PERSON.getZeroBased());
         DeletePhotoCommand deletePhotoCommand = new DeletePhotoCommand(INDEX_FIRST_PERSON);
 
-        String expectedMessage = String.format(DeletePhotoCommand.MESSAGE_DELETE_PHOTO_SUCCESS,
+        String expectedMessage = String.format(DeletePhotoCommand.MESSAGE_NO_PHOTO,
                 Messages.format(personWithoutPhoto));
 
-        Model expectedModel = new ModelManager(new AddressBook(model.getAddressBook()), new UserPrefs());
-
-        assertCommandSuccess(deletePhotoCommand, model, expectedMessage, expectedModel);
+        assertCommandFailure(deletePhotoCommand, model, expectedMessage);
     }
 
     @Test

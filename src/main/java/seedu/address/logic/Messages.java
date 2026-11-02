@@ -44,6 +44,7 @@ public class Messages {
      * Formats the {@code person} for display to the user.
      */
     public static String format(Person person) {
+        requireNonNull(person);
         final StringBuilder builder = new StringBuilder();
         builder.append(person.getName())
                 .append("; Phone: ")
@@ -62,8 +63,10 @@ public class Messages {
             builder.append("; Photo: ")
                     .append(person.getPhotoPath());
         }
-        builder.append("; Tags: ");
-        person.getTags().forEach(builder::append);
+        if (!person.getTags().isEmpty()) {
+            builder.append("; Tags: ");
+            person.getTags().forEach(builder::append);
+        }
         return builder.toString();
     }
 
@@ -84,8 +87,10 @@ public class Messages {
             builder.append("; Photo: ")
                     .append(parent.getPhotoPath());
         }
-        builder.append("; Requirements: ")
-                .append(String.join(", ", parent.getRequirements()));
+        if (!parent.getRequirements().isEmpty()) {
+            builder.append("; Requirements: ")
+                    .append(String.join(", ", parent.getRequirements()));
+        }
         return builder.toString();
     }
 

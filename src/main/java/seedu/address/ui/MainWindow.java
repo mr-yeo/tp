@@ -13,6 +13,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextInputControl;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
@@ -59,6 +60,9 @@ public class MainWindow extends UiPart<Stage> {
 
     @FXML
     private Menu fileMenu;
+
+    @FXML
+    private Menu userGuideMenu;
 
     @FXML
     private MenuItem exitMenuItem;
@@ -115,8 +119,29 @@ public class MainWindow extends UiPart<Stage> {
         setAccelerator(helpMenuItem, KeyCombination.valueOf("F1"));
         // The filter sits on the window's content rather than the window, so the menu bar sees Esc first
         // and can still use it to close a menu the user is already in.
+        getRoot().getScene().getRoot().addEventFilter(
+                KeyEvent.KEY_PRESSED, this::handleMenuShortcuts);
         getRoot().getScene().getRoot().addEventFilter(KeyEvent.KEY_PRESSED, this::handleEscape);
         fileMenu.setOnShown(event -> selectExit());
+        userGuideMenu.setOnShown(event -> selectHelpMenuItem());
+    }
+
+    /**
+     * Handles keyboard shortcuts for opening menus.
+     * Alt + F opens the File menu.
+     * Alt + U opens the User Guide menu.
+     */
+    private void handleMenuShortcuts(KeyEvent event) {
+        if (!event.isAltDown()) {
+            return;
+        }
+        if (event.getCode() == KeyCode.F) {
+            fileMenu.show();
+            event.consume();
+        } else if (event.getCode() == KeyCode.U) {
+            userGuideMenu.show();
+            event.consume();
+        }
     }
 
     /**
@@ -145,6 +170,20 @@ public class MainWindow extends UiPart<Stage> {
         }
         exitEntry.requestFocus();
         logger.fine("Opened the File menu with Exit selected");
+    }
+
+    /**
+     * Selects the Open User Guide menu item when the User Guide menu is opened.
+     */
+    private void selectHelpMenuItem() {
+        assert userGuideMenu.isShowing() : "User Guide menu must be open";
+        Node helpEntry = helpMenuItem.getStyleableNode();
+        if (helpEntry == null) {
+            logger.warning("The User Guide menu opened without an entry to select");
+            return;
+        }
+        helpEntry.requestFocus();
+        logger.fine("Opened the User Guide menu with Open User Guide selected");
     }
 
     /**

@@ -5,15 +5,12 @@ import static seedu.address.logic.parser.CliSyntax.PREFIX_REMINDER;
 import static seedu.address.logic.parser.CliSyntax.PREFIX_REMINDER_TIME;
 
 import java.time.LocalDateTime;
-import java.util.regex.Pattern;
 
 import seedu.address.logic.commands.AddReminderCommand;
 import seedu.address.logic.parser.exceptions.ParseException;
 
 /** Parses arguments for {@link AddReminderCommand}. */
 public class AddReminderCommandParser implements Parser<AddReminderCommand> {
-    private static final Pattern UNEXPECTED_PREFIX = Pattern.compile(
-            "(^|\\s)(n|p|e|a|s|g|f|t|task|tid|status|link|day|from|to)/");
 
     @Override
     public AddReminderCommand parse(String args) throws ParseException {
@@ -23,9 +20,6 @@ public class AddReminderCommandParser implements Parser<AddReminderCommand> {
         }
         argMultimap.verifyNoDuplicatePrefixesFor(PREFIX_REMINDER, PREFIX_REMINDER_TIME);
         String text = argMultimap.getValue(PREFIX_REMINDER).orElse("");
-        if (UNEXPECTED_PREFIX.matcher(text).find()) {
-            throw invalidFormat();
-        }
         try {
             String reminderText = ParserUtil.parseReminderText(text);
             LocalDateTime dueAt = argMultimap.getValue(PREFIX_REMINDER_TIME).isPresent()

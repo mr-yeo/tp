@@ -53,7 +53,11 @@ public class HistoryCommandParser implements Parser<HistoryCommand> {
             AssessmentDetails assessment = new AssessmentDetails(date, parseSubject(required(values, "subject")),
                     required(values, "category"), required(values, "title"), score, maximum);
             return new HistoryCommand(operation, target, assessment);
-        } catch (ParseException | IllegalArgumentException | DateTimeException e) {
+        } catch (DateTimeException e) {
+            throw new ParseException("Invalid " + operation + ": "
+                    + "date/ must contain a valid calendar date in YYYY-MM-DD format."
+                    + "\n" + HistoryCommand.usage(operation), e);
+        } catch (ParseException | IllegalArgumentException e) {
             throw new ParseException("Invalid " + operation + ": " + e.getMessage()
                     + "\n" + HistoryCommand.usage(operation), e);
         }
