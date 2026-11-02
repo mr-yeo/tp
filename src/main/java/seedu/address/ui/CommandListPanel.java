@@ -35,6 +35,7 @@ public class CommandListPanel extends UiPart<Region> {
         commandListView.setItems(FXCollections.unmodifiableObservableList(
                 FXCollections.observableArrayList(commandSummaries)));
         commandListView.setCellFactory(listView -> new CommandListViewCell());
+        ListViewUtil.enableCompleteLastItemScroll(commandListView);
         logger.fine("Created command list with " + commandSummaries.size() + " commands.");
     }
 
