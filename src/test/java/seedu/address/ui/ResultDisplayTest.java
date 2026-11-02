@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import javafx.application.Platform;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -87,20 +88,27 @@ public class ResultDisplayTest {
      */
     private static void checkShownDisplay(String feedback, BiConsumer<ResultDisplay, TextArea> check)
             throws Exception {
-        FxTestSupport.runOnFxThread(() -> {
-            ResultDisplay display = new ResultDisplay();
-            Stage stage = new Stage();
-            stage.setScene(new Scene(display.getRoot(), 400, 120));
-            stage.show();
-            display.setFeedbackToUser(feedback);
-            display.getRoot().applyCss();
-            display.getRoot().layout();
-            try {
-                check.accept(display, (TextArea) display.getRoot().lookup("#resultDisplay"));
-            } finally {
-                stage.close();
-            }
-        });
+        Stage stage = FxTestSupport.runOnFxThread(() -> new Stage());
+        try {
+            ResultDisplay display = FxTestSupport.runOnFxThread(() -> {
+                ResultDisplay result = new ResultDisplay();
+                result.setFeedbackToUser(feedback);
+                stage.setScene(new Scene(result.getRoot(), 400, 120));
+                stage.show();
+                return result;
+            });
+            FxTestSupport.waitForLayout(FxTestSupport.runOnFxThread(() -> stage.getScene()));
+            FxTestSupport.runOnFxThread(() -> {
+                TextArea text = (TextArea) display.getRoot().lookup("#resultDisplay");
+                ScrollPane scroll = (ScrollPane) text.lookup(".scroll-pane");
+                assertTrue(scroll.getViewportBounds().getHeight() > 0, "The text viewport must be laid out");
+                assertTrue(scroll.getContent().getLayoutBounds().getHeight() > scroll.getViewportBounds().getHeight(),
+                        "The feedback must overflow the viewport to test scrolling");
+                check.accept(display, text);
+            });
+        } finally {
+            FxTestSupport.runOnFxThread(() -> stage.close());
+        }
     }
 
     private static KeyEvent pressKey(ResultDisplay display, KeyCode code) {

@@ -56,7 +56,8 @@ public class MainWindowShortcutTest {
         checkShownWindow(window -> {
             Stage stage = window.getPrimaryStage();
             Node commandBox = stage.getScene().lookup("#commandTextField");
-            pressKey(commandBox, KeyCode.F10);
+            // JavaFX uses Ctrl+F10 to activate the menu bar on macOS.
+            pressKey(commandBox, KeyCode.F10, System.getProperty("os.name").startsWith("Mac"));
             pressKey(commandBox, KeyCode.ESCAPE);
             assertFalse(fileMenuOf(stage).isShowing());
             assertTrue(stage.isShowing());
@@ -147,9 +148,13 @@ public class MainWindowShortcutTest {
      * even while a menu is open, as real key presses do, and the window passes them on to the open menu.
      */
     private static void pressKey(Node target, KeyCode code) {
+        pressKey(target, code, false);
+    }
+
+    private static void pressKey(Node target, KeyCode code, boolean controlDown) {
         Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_PRESSED, KeyEvent.CHAR_UNDEFINED, "", code,
-                false, false, false, false));
+                false, controlDown, false, false));
         Event.fireEvent(target, new KeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.CHAR_UNDEFINED, "", code,
-                false, false, false, false));
+                false, controlDown, false, false));
     }
 }
