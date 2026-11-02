@@ -20,7 +20,11 @@ public class StatsCommandParser implements Parser<StatsCommand> {
     public StatsCommand parse(String args) throws ParseException {
         try {
             return parseReport(args);
-        } catch (ParseException | IllegalArgumentException | DateTimeException e) {
+        } catch (DateTimeException e) {
+            throw new ParseException("Invalid statistics date range: from/ and to/ "
+                    + "must contain a valid calendar date in YYYY-MM-DD format."
+                    + "\n" + StatsCommand.usage(studentReport), e);
+        } catch (ParseException | IllegalArgumentException e) {
             throw new ParseException(e.getMessage() + "\n" + StatsCommand.usage(studentReport), e);
         }
     }
@@ -47,7 +51,7 @@ public class StatsCommandParser implements Parser<StatsCommand> {
                 throw new IllegalArgumentException("from must be on or before to.");
             }
             return new StatsCommand(student, from, to);
-        } catch (IllegalArgumentException | DateTimeException e) {
+        } catch (IllegalArgumentException e) {
             throw new ParseException("Invalid statistics date range: " + e.getMessage(), e);
         }
     }
