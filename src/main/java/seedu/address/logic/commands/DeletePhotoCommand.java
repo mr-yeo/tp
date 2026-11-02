@@ -26,6 +26,7 @@ public class DeletePhotoCommand extends Command {
             + "Example: " + COMMAND_WORD + " 3";
 
     public static final String MESSAGE_DELETE_PHOTO_SUCCESS = "Deleted photo from student: %1$s";
+    public static final String MESSAGE_NO_PHOTO = "Student has no photo to delete: %1$s";
 
     private final Index targetIndex;
 
@@ -47,6 +48,9 @@ public class DeletePhotoCommand extends Command {
         }
 
         Person personToUpdate = lastShownList.get(targetIndex.getZeroBased());
+        if (!personToUpdate.getPhotoPath().isPresent()) {
+            throw new CommandException(String.format(MESSAGE_NO_PHOTO, Messages.format(personToUpdate)));
+        }
         Person updatedPerson = new Person(personToUpdate.getName(), personToUpdate.getPhone(),
                 personToUpdate.getEmail(), personToUpdate.getAddress(), personToUpdate.getSubject(),
             personToUpdate.getGradeLevel(), PhotoPath.NONE, personToUpdate.getTaskList(), personToUpdate.getTags());
