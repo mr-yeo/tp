@@ -68,8 +68,8 @@ UserPrefs .up.|> ReadOnlyUserPrefs
 
 AddressBook *--> "1" UniquePersonList
 AddressBook --> "~*" ParentContact
-AddressBook *--> "1" Schedule
-AddressBook *--> "1" ReminderList
+AddressBook *---> "1" Schedule
+AddressBook *---> "1" ReminderList
 AddressBook --> "*" LessonRecord
 AddressBook --> "*" AssessmentRecord
 UniquePersonList --> "~* all" Person
@@ -77,11 +77,11 @@ Person *--> Name
 Person *--> Phone
 Person *--> Email
 Person *--> Address
-Person *--> "*" Tag
-Person *--> Subject
-Person *--> GradeLevel
+Person *---> "*" Tag
+Person *---> Subject
+Person *---> GradeLevel
 Person *--> PhotoPath
-Person *--> TaskList
+Person *---> TaskList
 
 TaskList --> "*" Task
 

@@ -1,6 +1,7 @@
 @startuml
 !include style.puml
 skinparam ArrowFontStyle plain
+skinparam ParticipantPadding 5
 
 box MainWindow STORAGE_COLOR
 participant "m:MainWindow" as MainWindow STORAGE_COLOR_T2
@@ -8,10 +9,10 @@ end box
 
 box Logic LOGIC_COLOR_T1
 participant ":LogicManager" as LogicManager LOGIC_COLOR
-participant ":AddressBookParser" as AddressBookParser LOGIC_COLOR
-participant ":SearchCommandParser" as SearchCommandParser LOGIC_COLOR
-participant "s:SearchCommand" as SearchCommand LOGIC_COLOR
-participant "r:CommandResult" as CommandResult LOGIC_COLOR
+participant ":AddressBook\nParser" as AddressBookParser LOGIC_COLOR
+participant ":SearchCommand\nParser" as SearchCommandParser LOGIC_COLOR
+participant "s:Search\nCommand" as SearchCommand LOGIC_COLOR
+participant "r:Command\nResult" as CommandResult LOGIC_COLOR
 end box
 
 box Model MODEL_COLOR_T1
@@ -19,14 +20,14 @@ participant "m:Model" as Model MODEL_COLOR
 end box
 
 box Ui UI_COLOR_T1
-participant "p1:PersonListPanel" as PersonListPanel UI_COLOR
-participant "p2:ParentListPanel" as ParentListPanel UI_COLOR
+participant "p1:PersonList\nPanel" as PersonListPanel UI_COLOR
+participant "p2:ParentList\nPanel" as ParentListPanel UI_COLOR
 end box
 
-MainWindow -> LogicManager : execute("search keyword")
+MainWindow -> LogicManager : execute(\n"search keyword")
 activate LogicManager
 
-LogicManager -> AddressBookParser : parseCommand("search keyword")
+LogicManager -> AddressBookParser : parseCommand(\n"search keyword")
 activate AddressBookParser
 
 create SearchCommandParser
@@ -40,7 +41,7 @@ AddressBookParser -> SearchCommandParser : parse("keyword")
 activate SearchCommandParser
 
 create SearchCommand
-SearchCommandParser -> SearchCommand : SearchCommand(PersonPredicate, ParentContactPredicate)
+SearchCommandParser -> SearchCommand : SearchCommand(\nPersonPredicate,\nParentContactPredicate)
 activate SearchCommand
 
 SearchCommand --> SearchCommandParser :
@@ -58,13 +59,13 @@ deactivate AddressBookParser
 LogicManager -> SearchCommand : execute(m)
 activate SearchCommand
 
-SearchCommand -> Model : updateFilteredPersonList(PersonPredicate)
+SearchCommand -> Model : updateFilteredPersonList(\nPersonPredicate)
 activate Model
 
 Model --> SearchCommand
 deactivate Model
 
-SearchCommand -> Model : updateParentList(ParentContactPredicate)
+SearchCommand -> Model : updateParentList(\nParentContactPredicate)
 activate Model
 
 Model --> SearchCommand

@@ -9,7 +9,8 @@ title: Developer Guide
 
 ## **Acknowledgements**
 
-* _{List the sources of reused or adapted ideas, code, documentation, and third-party libraries here, with links to the originals.}_
+The team used AI tools, including [Claude](https://claude.ai/), [ChatGPT](https://chatgpt.com/), and
+[GitHub Copilot](https://github.com/features/copilot), to help write most of Tutoria's code.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -31,12 +32,13 @@ Refer to the guide [_Setting up and getting started_](SettingUp.md).
 <img src="images/ArchitectureDiagram.png" width="280" />
 
 The ***Architecture Diagram*** given above explains the high-level design of the App.
+It omits some direct dependencies, including the model's use of snapshot management and logging; see the [Model component](#model-component) section.
 
 The following provides a quick overview of the main components and their interactions.
 
 **Main components of the architecture**
 
-**`Main`** (consisting of classes [`Main`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
+**`Main`** (consisting of classes [`Main`](https://github.com/AY2627S1-CS2103T-F09-4/tp/blob/master/src/main/java/seedu/address/Main.java) and [`MainApp`](https://github.com/AY2627S1-CS2103T-F09-4/tp/blob/master/src/main/java/seedu/address/MainApp.java)) is in charge of the app launch and shut down.
 * At app launch, it initializes the other components in the correct sequence, and connects them up with each other.
 * At shut down, it shuts down the other components and invokes cleanup methods where necessary.
 
@@ -51,9 +53,11 @@ The bulk of the app's work is done by the following four components:
 
 **How the architecture components interact with each other**
 
-The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete 1`.
+The *Sequence Diagram* below shows how the components interact with each other for the scenario where the user issues the command `delete-student 1`.
 
-<img src="images/ArchitectureSequenceDiagram.png" width="574" />
+<img src="images/ArchitectureSequenceDiagram.png" width="713" />
+
+After saving the modified data, `Logic` asks `Model` to save a snapshot for undo and redo.
 
 Each of the four main components (also shown in the diagram above),
 
@@ -98,7 +102,7 @@ The `UI` component,
 * Each card starts and ends at the session's exact times, so a 13:10 end and a 13:20 end are drawn at different places. The exception is a session shorter than 30 minutes: its card is drawn 30 minutes long (but never past midnight), because a narrower card is too small to show its details. The card still shows the session's real times. Each card is only as tall as its details need. A card that overlaps earlier cards on the same day is placed just below them, which can make that day's row taller.
 * The timetable can be focused with Tab. Left and right arrows then scroll by one hour, up and down arrows by one row, Page Up and Page Down by one screen, and Home and End jump to the earliest and latest hours.
 * Each student is given a colour based on their position in the student list, so all of a student's sessions share one colour. The legend lists the scheduled students and their colours.
-* Each card shows the student's index in the displayed student list, name, subject, grade level, address and time slot. If a student is not in the displayed list, for example after a `find` command, the card shows only the name. A detail too long for one line wraps onto the next, and that day's row grows so the whole card shows.
+* Each card shows the student's name, subject, grade level, address, time slot and session number. The title also includes the student's index in the displayed student list. If the student is not in the displayed list, for example after a `search` command, the title shows the name without an index; the other card details remain visible. A detail too long for one line wraps onto the next, and that day's row grows so the whole card shows.
 
 #### Help tab
 
@@ -111,25 +115,24 @@ The `UI` component,
 
 ### Logic component
 
-**API** : [`Logic.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/logic/Logic.java)
+**API** : [`Logic.java`](https://github.com/AY2627S1-CS2103T-F09-4/tp/blob/master/src/main/java/seedu/address/logic/Logic.java)
 
 Here's a (partial) class diagram of the `Logic` component:
 
-<img src="images/LogicClassDiagram.png" width="550"/>
+<a href="images/LogicClassDiagram.png"><img src="images/LogicClassDiagram.png" /></a>
 
-The sequence diagram below illustrates the interactions within the `Logic` component, taking `execute("delete 1")` API call as an example.
+The sequence diagram below illustrates the interactions within the `Logic` component, taking the `execute("delete-student 1")` API call as an example.
 
-![Interactions Inside the Logic Component for the `delete 1` Command](images/DeleteSequenceDiagram.png)
+![Interactions Inside the Logic Component for the `delete-student 1` Command](images/DeleteSequenceDiagram.png)
 
 <div markdown="span" class="alert alert-info">:information_source: **Note:** The lifeline for `DeleteCommandParser` should end at the destroy marker (X), but due to a limitation of PlantUML, it continues to the end of the diagram.
 </div>
 
 How the `Logic` component works:
 
-1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object, which in turn creates a parser that matches the command (e.g., `DeleteCommandParser`) and uses it to parse the command. 
+1. When `Logic` is called upon to execute a command, the command is passed to an `AddressBookParser` object. Depending on the command word, it either uses a command-specific parser (e.g., `DeleteCommandParser`) or creates the command directly (e.g., `HelpCommand`).
 2. This results in a `Command` object (more precisely, an object of one of its subclasses e.g., `DeleteCommand`) which is executed by the `LogicManager`. 
-3. The command can communicate with the `Model` when it is executed (e.g. to delete a person).<br>
-   Note that although this is shown as a single step in the diagram above for simplicity, the code can require several interactions between the command object and the `Model` to complete the operation. 
+3. The command can communicate with the `Model` when it is executed. In the example, `DeleteCommand` obtains the filtered student list, resolves the index and deletes the selected student.
 4. The result of the command execution is encapsulated as a `CommandResult` object which is returned from `Logic`.
 
 Here are the other classes in `Logic` (omitted from the class diagram above) that are used for parsing a user command:
@@ -137,33 +140,34 @@ Here are the other classes in `Logic` (omitted from the class diagram above) tha
 <img src="images/ParserClasses.png" width="600"/>
 
 How the parsing works:
-* When called upon to parse a user command, the `AddressBookParser` class creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the user command and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
+* For a command that needs a command-specific parser, `AddressBookParser` creates an `XYZCommandParser` (`XYZ` is a placeholder for the specific command name, e.g., `AddCommandParser`). The parser uses the other classes shown above to parse the arguments and create an `XYZCommand` object (e.g., `AddCommand`). The `AddressBookParser` returns that object as a `Command` object.
 * All `XYZCommandParser` classes, such as `AddCommandParser` and `DeleteCommandParser`, implement the `Parser` interface so they can be treated similarly where appropriate, for example during testing.
 
 ### Model component
-**API** : [`Model.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/model/Model.java)
 
-<img src="images/ModelClassDiagram.png" width="450" />
+**API** : [`Model.java`](https://github.com/AY2627S1-CS2103T-F09-4/tp/blob/master/src/main/java/seedu/address/model/Model.java)
 
+<a href="images/ModelClassDiagram.png"><img src="images/ModelClassDiagram.png" /></a>
+
+The `id` field shown for `Person` represents its `studentId` field in the current code.
 
 The `Model` component,
 
 * stores the address book data i.e., all `Person` objects (which are contained in a `UniquePersonList` object) and `ParentContact` objects (which are contained in an `ObservableList` object).
 * stores the `Person` objects selected by the current filter, such as search results, in a separate _filtered_ list. It exposes this list as an unmodifiable `ObservableList<Person>` that the UI can observe and bind to, so the UI updates when the list changes.
 * stores the `ParentContact` objects in a similar way.
-* stores and allows functionality for `Reminder` objects using the `ReminderList` object, exposed as an `UnmodifiableList` object.
-* stores and allows functionality for `ScheduledSession` objects in the `Schedule` object, exposed as an `UnmodifiableObservableList` object.
+* stores `Reminder` objects in a `ReminderList`, which exposes them as an unmodifiable `List<Reminder>`.
+* stores `ScheduledSession` objects in a `Schedule`, which exposes them as an unmodifiable `ObservableList<ScheduledSession>`.
 * stores a `UserPrefs` object that represents the user’s preferences (currently, just the GUI settings). This is exposed to the outside as a `ReadOnlyUserPrefs` object.
-* stores `AssessmentRecord` objects and `LessonRecord` objects as a `List<>` in the `Addressbook` object.
-* does not depend on any of the other three components (as the `Model` represents data entities of the domain, they should make sense on their own without depending on other components).
-* has its `AddressBook` data stored as snapshots by the `SnapshotManager` class in the `storage` package.
-* Other classes in the Model package, such as `PersonContainsKeywordPredicate`, are used for commands rather than the representation of a `Person` or `ParentContact`, hence they are not included.
+* stores `AssessmentRecord` and `LessonRecord` objects in lists in the `AddressBook` object.
+* uses `SnapshotManager` from the `storage` package to retain `AddressBook` snapshots for undo and redo. The search predicates in the model also reference `LogicManager` as a logging category. These are direct dependencies on other components.
+* uses other model classes, such as `PersonContainsKeywordsPredicate`, to filter data for commands; these are omitted from the class diagram.
 
 ### Storage component
 
-**API** : [`Storage.java`](https://github.com/se-edu/addressbook-level3/tree/master/src/main/java/seedu/address/storage/Storage.java)
+**API** : [`Storage.java`](https://github.com/AY2627S1-CS2103T-F09-4/tp/blob/master/src/main/java/seedu/address/storage/Storage.java)
 
-<img src="images/StorageClassDiagram.png" width="550" />
+<a href="images/StorageClassDiagram.png"><img src="images/StorageClassDiagram.png" /></a>
 
 The `Storage` component,
 * can save both address book data and user preference data in JSON format, and read them back into corresponding objects.
@@ -210,9 +214,9 @@ linked student, and requirements. Unspecified fields retain their existing value
 
 ### Search
 
-Searches all _user-visible_ attributes of `Person` and `ParentContact` objects in the `AddressBook` for the user's keyword and highlights them for the user.
-* meaning it will not search attributes users are not meant to see, such as `studentId`.
+Searches all _user-visible_ attributes of `Person` and `ParentContact` objects in the `AddressBook` for the user's keyword and highlights them for the user. This means that search will exclude words that users are not meant to see, such as `studentId`.
 
+How `Search` works:
 1. `SearchCommandParser` parses the user's input and creates the predicates required to match the `keyword`. These predicates are used to construct a `SearchCommand`.
 2. `SearchCommand` uses the model interface to filter the displayed `Person` and `ParentContact` lists through `ModelManager`, retaining entries that match the keyword.
 3. The command returns a `CommandResult` containing the `keyword` needed for highlighting. This result is passed to the `UI`.
@@ -220,13 +224,18 @@ Searches all _user-visible_ attributes of `Person` and `ParentContact` objects i
 5. To prevent search filtering from affecting subsequent commands, `MainWindow` resets the filtered lists to reflect the address book's entries after commands other than `SearchCommand`.
 
 This is illustrated in the following diagram:
-![SearchCommandSequenceDiagram.png](images/SearchCommandSequenceDiagram.png)
+
+[![SearchCommandSequenceDiagram.png](images/SearchCommandSequenceDiagram.png)](images/SearchCommandSequenceDiagram.png)
 
 ### Undo and Redo
-`Undo` reverses changes to the `AddressBook` and `Redo` reverses the changes made by `Undo`.
-* If a command doesn't change the `AddressBook`, such as `help`, `Undo` will ignore it. This also applies to `Redo`.
+
+`Undo` reverses changes to the `AddressBook` and `Redo` reverses the changes made by `Undo`. 
+
+Take note:
+* If a command doesn't change the `AddressBook` (For example `help`), `Undo` will ignore it. This also applies to `Redo`.
 * If some changes were undone and new changes are introduced, the changes that could have been redone will be lost.
 
+How `Undo`/`Redo` works:
 1. Whenever a command is executed, `SnapshotManager` saves a snapshot of the current `AddressBook` and the relevant command text in separate `List` objects. `currentIndex` tracks the current position in the snapshot history.
 2. `SnapshotManager` is managed by `ModelManager`, which provides access to the snapshot history for `undo` and `redo` operations.
 3. When `UndoCommand` is executed, it uses `ModelManager` to move `currentIndex` back by one position and retrieve a copy of the corresponding `AddressBook` snapshot. The relevant command text is then included in the resulting `CommandResult`.
@@ -240,173 +249,70 @@ When the program begins:
 ![UndoRedoInitial.png](images/UndoRedoInitial.png)
 
 After a command:
+
 ![UndoRedoAddOnce.png](images/UndoRedoAddOnce.png)
 
 After another command:
+
 ![UndoRedoAddTwice.png](images/UndoRedoAddTwice.png)
 
 After `undo`:
+
 ![UndoRedoUndoOnce.png](images/UndoRedoUndoOnce.png)
 
 After `redo`:
+
 ![UndoRedoRedoOnce.png](images/UndoRedoRedoOnce.png)
 
 If from `undo`, a command that changes the AddressBook is executed:
+
 ![UndoRedoChangedAddressBook.png](images/UndoRedoChangedAddressBook.png)
-Notice how the `Current Snapshot` is `ab3` rather than `ab2`. 
+
+Notice how the `Current Snapshot` is `ab3` rather than `ab2`.
 
 If from `undo`, a command that doesn't change the AddressBook is executed:
+
 ![UndoRedoList.png](images/UndoRedoList.png)
 
-### Historical records and statistics
+### Recording student history and statistics
 
-The statistics MVP measures teaching **workload, not profitability**. It has no payments, expenses, profit,
-charts or exports. Reports derive from explicitly entered source history, never from the recurring weekly schedule.
+Lessons and assessments are stored as historical records in `AddressBook`, separate from the recurring weekly schedule.
+Each record retains the student's ID and name from when it was recorded. Deleting a student removes their recurring
+sessions but keeps their history; a newly created student has a different identity. `clear` removes both current data
+and history.
 
-**Model and identity.** `Person` now carries a persistent UUID `studentId`. New students receive a new UUID;
-`AddressBook.setPerson` transfers the target identity to replacement details, covering edits, photos and tasks.
-`Person.copy` preserves it. Existing detail-based `Person.equals`, hashing and name/phone duplicate detection remain
-compatible with existing callers; historical relationships and distinct-student counts explicitly use `studentId`.
-Student IDs are unique in a loaded address book and are never derived from mutable names or phone numbers.
-Parent contacts also store student links by persistent ID; see [Parent contact editing](#parent-contact-editing).
+How historical records and statistics work:
+1. `AddressBookParser` routes history commands through `HistoryCommandParser` to `HistoryCommand`. The list commands
+   display stored records; record, edit and delete operations update the history through `Model.setHistory`.
+2. `record-assessment` resolves the student against the displayed student list and stores their ID and name with the
+   assessment. Editing an assessment preserves its record ID and student ID.
+3. `StatsCommandParser` parses `stats` and `stats-student` into `StatsCommand`. It requires both date boundaries or
+   neither; when omitted, the range is January 1 through today according to the model clock. A student report resolves
+   its index against the displayed student list.
+4. `StatsCommand` passes the address book, student (if selected) and inclusive date range to `StatisticsReport`. The
+   business report summarizes completed-lesson counts, teaching hours, distinct students and monthly workload; it
+   reports workload, not profitability. The student report shows lesson counts by outcome and assessment percentages.
+   Its attendance rate is completed / (completed + absent), excluding cancelled and unrecorded lessons, and its
+   assessment change compares the first and last percentages by subject and category. The formatted report is
+   returned in a `CommandResult`. Reports and history-list commands are read-only; a missing attendance denominator
+   or fewer than two comparable marks produces N/A.
 
-`model.statistics.LessonRecord` and `AssessmentRecord` are immutable Java records with their own UUID, student UUID
-and recorded student name. Lessons contain a date, subject, start/end time and explicit outcome. Assessments retain
-date, subject, category, title, score and maximum. The name snapshot makes orphan history identifiable after student
-deletion; listings use the current name while the student exists. Deletion removes weekly sessions as before, but
-does not remove history. Recreating a deleted student creates a different identity. `clear` explicitly clears everything.
+### Marking attendance
 
-`ReadOnlyAddressBook` exposes immutable historical lists with empty defaults. `AddressBook.setHistory` validates
-unique record IDs and replaces both lists atomically. `Model.setHistory` exposes this mutation through `ModelManager`.
-Reset, copy, equality and hashing include both collections; immutable records can be shared by snapshot copies.
-Historical data is retained even when its student is no longer in the active student list.
+Each dated attendance outcome is stored as a `LessonRecord` linked to a recurring `ScheduledSession`.
 
-**Commands and parsing.** `AddressBookParser` routes the history command family to `HistoryCommandParser` and
-statistics to `StatsCommandParser`. They reuse `ArgumentTokenizer`, `ArgumentMultimap`, `ParserUtil.parseIndex`,
-and `CommandException`/`ParseException`. Unknown and duplicate prefixes, missing or blank fields, invalid calendar
-dates, non-HH:mm times, overnight/zero durations, invalid outcomes and invalid marks are rejected before mutation.
-Future historical dates are checked at execution using `LocalDate.now(model.getClock())`, not wall-clock calls
-inside parsers. New lessons snapshot the student's current subject. Corrections supply all editable fields and
-retain record and student identities. Wrong-student assessment corrections use delete and re-record.
-History and statistics parse failures include their specific reason, command syntax and an example, including
-checked `ParseException`s from index parsing and prefix validation. Shared command usage helpers also supply
-syntax and examples for execution validation failures. Numeric assessment conversion errors identify score or max
-instead of exposing `BigDecimal` conversion internals.
-
-Student-index operations use the displayed student list. Session and historical record numbers resolve against
-their complete current collections in storage order, independent of student filters. Parsers use `ParserUtil.parseIndex`
-for these positive integer arguments; execution rejects out-of-range numbers with instructions to list again.
-UUID command arguments are no longer accepted. History lists and business reports use the complete address book.
-`StatsCommand` and listing `HistoryCommand`s override `Command.isReadOnly`; `LogicManager` returns their
-`CommandResult` without writing JSON or saving a snapshot. This is essential because saving a snapshot after undo
-would otherwise discard the redo branch. Other commands retain their existing snapshot behavior.
-
-**Calculations.** `StatisticsReport` is a pure formatter/calculator with no storage or UI dependencies. Completed
-lessons alone contribute to business counts, duration and distinct student UUIDs. Calendar-month rows include zero
-months and obey the requested inclusive dates. Attendance is completed / (completed + absent), excluding cancelled
-and unrecorded entries. Zero denominators show N/A. Assessment groups use trimmed, case-insensitive subject and
-category keys, ordered by date with recorded order preserved for same-date ties; each group compares its first and
-last percentages. Group keys remain lowercase internally, but `Change` labels use the earliest record's original
-subject/category spelling. Assessment detail lines also preserve recorded spelling.
-One or zero comparable records gives N/A. Marks use `BigDecimal`, intermediate percentages have twelve decimal places,
-and displayed hours/percentages/changes round HALF_UP to two. Report defaults are January 1 through today from the
-injected clock. Explicit boundaries must be supplied together and ordered. No totals are cached or persisted.
-
-**Storage and compatibility.** `JsonAdaptedPerson` saves `studentId`; missing IDs in older JSON receive UUIDs when
-loaded and are persisted on the next save. `JsonSerializableAddressBook` saves `lessonRecords` and `assessmentRecords`
-through dedicated adapters. Absent collections default to empty; no records are inferred from schedules. Null or
-structurally invalid records, duplicate record IDs and duplicate student IDs fail loading via `IllegalValueException`.
-Deleted-student references are valid, so the loader deliberately does not require each historical UUID to refer to
-an active student. Future-date validation uses the model clock at command execution; JSON adapters validate structural
-constraints independently of the machine clock. Undo/redo snapshots preserve student IDs, historical UUIDs and records.
-
-**Verification.** `StatisticsReportTest` covers workload, inclusive boundaries, zero cases, attendance, grouping,
-same-date ties and percentage-point rounding. `StatisticsParserTest` covers malformed command input.
-`StatisticsIntegrationTest` uses a fixed Asia/Singapore clock and temporary JSON storage to test filtered indices,
-identity through edits/tasks/reload, deletions, corrections, undo/redo and read-only reports preserving redo and file
-contents. `StatisticsStorageTest` covers old data, UUID uniqueness, immutable history, copy/reset/equality, malformed
-records and deleted-student round trips. Manual smoke test: record a lesson and two assessments, run both reports,
-undo a mutation, run reports and lists, then redo; delete the student and check retained identifiable history.
-
-**MVP limits.** One lesson is one same-day interval. Repeated attendance submissions for the same session/date update
-the existing record. Student reports require an active displayed student; retained deleted-student history remains
-available through lists and business totals. Historical lists show all entries and dates without pagination.
-
-### Attendance linked to recurring sessions
-
-`ScheduledSession.sessionId` is a persistent UUID for one weekly template belonging to one student. Fresh sessions
-receive fresh IDs, including duplicate slots; `withStudent` retains the ID, so student edits and deep snapshot copies
-preserve it. Equality and hashing include this identity plus session details. `isSameSlot` explicitly compares details
-for the existing `unschedule-student` workflow: the command resolves and removes the first actual matching session.
-`Schedule` rejects duplicate identities but allows overlapping or identical slots with distinct IDs.
-
-`list-schedule` is a read-only command returning all sessions with one-based numbers through `CommandResult`, independent of
-student filters. `MainWindow.selectTabForCommand` handles it before generic list routing, selecting the existing
-Schedule tab; successful `mark-attendance` also selects that tab. Each `ScheduleSessionCard` shows a `Session #N` label
-instead of a UUID field, separate from its `Student:` label. `ScheduleGrid` maps persistent session UUIDs to their
-positions in the original list before sorting cards into weekday/time lanes, so timetable numbers match command output.
-Cards retain their weekly layout. No dialog or separate attendance tab is introduced.
-
-The terminal listing sorts the original list indices by weekday (Monday through Sunday) and start time.
-Rows have consecutive display numbers and end with a separate `Session #N` label using the original index plus one.
-Equal weekday/start pairs retain insertion order. Storage order, attendance resolution, and timetable numbering are
-unchanged. Attendance uses `Session #N`, not the chronological row number.
-
-`MarkAttendanceCommandParser` reuses strict date parsing and the existing tokenizer, rejecting missing, unknown or
-duplicate arguments. Its error boundary includes prefix and index parsing, so checked parse failures also receive
-the specific reason, syntax, example, and session-number guidance from `MarkAttendanceCommand.withUsage`.
-Execution validation uses the same helper for invalid sessions, future dates, weekday mismatches, and exact duplicates.
-`MarkAttendanceCommand` accepts an `Index`, resolves against the complete schedule, then uses
-the resolved session UUID internally. It checks
-the requested weekday and future-date boundary using the model's injectable clock. Since weekly templates have no
-effective start/end dates, any matching weekday on or before today can be recorded; today's time need not have passed.
-
-`LessonRecord.sourceSessionId` is optional. First marking snapshots the student UUID/name, current subject and times
-into a new dated lesson. Subsequent marking finds the same `(sourceSessionId, date)` and updates only its outcome,
-preserving the historical UUID and captured details. `AddressBook.setHistory`
-rejects duplicate linked occurrences and student mismatches against active templates, while allowing retained links
-to removed templates. `mark-attendance` is the sole command for creating or updating dated lessons;
-`list-lessons` provides read-only history. Legacy manual records remain unlinked and are never inferred or merged
-automatically. `list-lessons` sorts original history indices by date and start time, preserving recorded order for
-ties. Each row has a consecutive display number and ends with `Lesson #N`, the original history index plus one.
-Listing does not reorder stored history. `delete-lesson RECORD_NUMBER` uses that label, not the sorted row number,
-and resolves against the complete lesson collection in storage
-order and removes only the selected historical record through `Model.setHistory`. Its feedback includes the record
-number, current or retained student name, date and times. Schedules and assessments are preserved. Existing JSON
-storage and snapshots provide persistence and undo/redo; no schema changes are required. It also works for records
-whose student or source schedule has been removed. There is no manual lesson creation or detail-editing command.
-
-When creating a new attendance record, the command checks all lesson history for an exact match on student UUID,
-date, start time and end time, regardless of session ID or outcome. This prevents duplicates after removing and
-recreating a recurring session, and includes legacy unlinked records and records linked to removed schedules.
-The error identifies the existing `Lesson #N` and its date/times before any mutation. Partial overlaps, adjacent
-intervals, different students and different dates are allowed. Cancelled outcomes have no special exception.
-If the same `(sourceSessionId, date)` already exists, attendance updates that record and preserves its ID instead
-of running the new-record check. Existing duplicates remain loadable without automatic cleanup, so users can
-review them with `list-lessons` and remove incorrect records with `delete-lesson`.
-Deleting history allows it to be recreated by marking the same active session/date again.
-
-JSON adapters store `sessionId` and `sourceSessionId`. Missing session IDs migrate to UUIDs on loading and persist on
-the next save; missing source links remain null. Malformed IDs, duplicate template IDs and duplicate linked occurrences
-fail loading. Copy/reset and undo/redo retain both identities. Unscheduling or deleting a student keeps dated history;
-rescheduling an identical slot creates a new template. Existing statistics calculate from lesson records unchanged:
-unmarked occurrences create no records, counts or implicit absences.
-
-`AttendanceIntegrationTest` verifies repeated marking, all outcomes, filters, clock boundaries, historical corrections,
-undo/redo, reload, duplicate slots and retention. `AttendanceStorageTest` covers migration, immutable source links,
-ID validation and equality. UI tests verify Schedule-tab routing, number labels on narrow cards, and numbering despite
-timetable sorting. Manual check: schedule a session, run `list-schedule`, use its number to mark attendance for a
-matching past date, then change the status
-and confirm only one historical record exists. Undo, view the schedule, and redo to confirm listing preserves history.
-
-**Displayed numbers versus identity.** Schedule, lesson and assessment lists each number their own complete collection
-from 1 in insertion order. New entries append; edits retain their position. Deletion, unscheduling, reset and undo/redo
-can shift numbers, so documentation tells users to list again before choosing a record. No display-number allocation
-state or last-listed snapshot is persisted. UUIDs remain unchanged in model objects and JSON; no data migration is
-needed for this interface change. Success messages and normal lists hide UUIDs and source links, the student statistics
-heading uses the name only, and deleted students use `Name (deleted)`. Attendance, copying and undo/redo still resolve
-relationships through persistent identities. Integration tests cover renumbering, independent historical lists,
-filters, invalid targets, hidden UUIDs, reload, and redo surviving read-only listing.
+How attendance is recorded:
+1. `AddressBookParser` routes `mark-attendance` through `MarkAttendanceCommandParser` to `MarkAttendanceCommand`.
+   `list-schedule` sorts sessions for display but labels each with its position in the stored schedule; the command
+   resolves `Session #N` against that complete schedule. The date must match the session's weekday and be no later
+   than today, and the outcome must be completed, absent, cancelled or unrecorded.
+2. The first mark creates a lesson linked by the session ID and captures the student's ID and name, subject, date and
+   session times. A later mark for the same session and date updates only the outcome. A new mark is rejected if the
+   student already has a lesson on that date with the same start and end times. The command stores the result through
+   `Model.setHistory` and returns a `CommandResult`.
+3. `list-lessons` sorts records by date and start time while showing each record's stored `Lesson #N`. `delete-lesson`
+   uses that number to remove a history record, not a recurring session. Removing a session or deleting its student
+   does not remove dated history, and an unmarked session creates no lesson or implied absence.
 
 --------------------------------------------------------------------------------------------------------------------
 
@@ -433,154 +339,278 @@ filters, invalid targets, hidden UUIDs, reload, and redo surviving read-only lis
 * prefers typing to mouse interactions
 * is reasonably comfortable using CLI apps
 
-**Value proposition**: optimize creating and tracking student information, including classes, deliverables, improvement, parents, locations, etc.
+**Value proposition**: Tutoria keeps student and parent information, schedules, student statistics, and reminders so that tutors can manage their work and review student progress.
 
 
 ### User stories
 
-Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`
+Priorities: High (must have) - `* * *`, Medium (nice to have) - `* *`, Low (unlikely to have) - `*`.
 
-| Priority | As a …​                          | I want to …​                                                                                    | So that I can…​                                                                                |
-|----------|----------------------------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| `* * *`  | user                             | do basic functionality like creating a student profile and adding and deleting data             | add / delete students and any info I submitted for them                                        |
-| `* * *`  | regular user                     | add tasks to students                                                                           | know what each student's tasking are                                                           |
-| `* * *`  | regular user                     | add parent profiles in addition to student ones                                                 | track their requirements as well                                                               |
-| `* * *`  | regular user                     | add images                                                                                      | tell the students apart                                                                        |
-| `* * *`  | regular user                     | search up information about my clients                                                          | See details about my clients                                                                   |
-| `* *`    | first time user                  | have some sample data                                                                           | explore the features                                                                           |
-| `* *`    | first time user                  | have user guide or help sheet                                                                   | know what features are available                                                               |
-| `* *`    | user                             | edit already submitted data                                                                     | update the data I have in case things change                                                   |
-| `* *`    | regular user                     | view dates as that little popup calendar instead of manually inputting dates                    | organize things easily and more efficiently                                                    |
-| `* *`    | regular user                     | search for information based on keywords                                                        | quickly find it rather than comb through the entire app                                        |
-| `* *`    | returning user                   | have suggested questions I can ask to make the app useful (payment, food, address, number, etc) | remember what I should do to make app useful                                                   |
-| `* *`    | regular user                     | set some info the app will regularly remind me every time the app opens                         | not forget about them or where they might be, and have the functionality to close it as well   |
-| `* *`    | experienced user                 | track my student's data and have it formatted into useful statistics                            | evaluate their performance                                                                     |
-| `* *`    | tutor who is very forgetful      | recieve notifications about tasks that need my attention                                        | not be as sloppy in my work                                                                    |
-| `* *`    | tutor                            | mark attendance for each scheduled session                                                      | have an accurate record of completed sessions                                                  |
-| `* *`    | tutor who likes to procrastinate | organise tasks into an eisenhower matrix                                                        | know which tasks to prioritise                                                                 |
-| `* *`    | regular user                     | filter and sort the student list by subject, grade level, etc                                   | quickly group and manage specific subsets of students                                          |
-| `* *`    | power user                       | use keyboard shortcut commands for common actions                                               | navigate the application faster without relying on a mouse                                     |
-| `* *`    | regular user                     | submit suggestions and feedback                                                                 | get changes that I want implemented                                                            |
-| `* *`    | regular user                     | view the schedule of a day                                                                      | summarize activities I might have from multiple students                                       |
-| `*`      | user who studies CS              | change the path of the app's data file                                                          | organize everything on my computer                                                             |
-| `*`      | user with a bad sleep schedule   | view the app in a dark mode version of the ui                                                   | not hurt my eyes                                                                               |
+| Priority | As a… | I want to… | So that I can… |
+|----------|-------|------------|----------------|
+| `* * *` | tutor | create, view and delete student profiles and their information | manage my students' details |
+| `* * *` | tutor | edit a student's existing information | keep the profile current when details change |
+| `* * *` | tutor | add tasks to students | know what work each student needs to do |
+| `* * *` | tutor | add parent profiles and link them to students | keep parent contacts and requirements together |
+| `* * *` | tutor | add photos to student and parent profiles | tell contacts apart |
+| `* * *` | tutor | search student and parent details | find client information quickly |
+| `* * *` | tutor | record assessments and view student progress statistics | evaluate attendance and assessment results |
+| `* * *` | tutor | mark attendance for scheduled sessions | keep an accurate record of lesson outcomes |
+| `* * *` | tutor | keep my records between launches | continue managing information after restarting Tutoria |
+| `* *` | first-time user | have sample data | explore the features |
+| `* *` | first-time user | have a user guide or help sheet | learn what features are available |
+| `* *` | tutor | choose dates using a calendar pop-up | enter dates more easily |
+| `* *` | tutor | search for information using keywords | find relevant records without scanning the full list |
+| `* *` | returning user | see suggested questions about topics such as payment, food, address or phone number | remember what information to collect |
+| `* *` | tutor | create, view and delete reminders, with due reminders shown in a pop-up | remember follow-up items |
+| `* *` | tutor | receive notifications about tasks that need attention | avoid overlooking student work |
+| `* *` | tutor | organise tasks in an Eisenhower matrix | know which tasks to prioritise |
+| `* *` | tutor | filter and sort students by subject, grade level or other details | manage a selected group more efficiently |
+| `* *` | power user | use keyboard shortcuts for common actions | navigate more quickly without relying on the mouse |
+| `* *` | tutor | submit suggestions and feedback | request improvements to the app |
+| `* *` | tutor | view the schedule for a selected day | see that day's activities across students |
+| `* *` | tutor | undo and redo changes | recover from recent edits |
+| `*` | tutor | change the path of the app's data file | organize app data on my computer |
+| `*` | user who prefers a darker display | use a dark-mode interface | view the app more comfortably |
 
 ### Use cases
 
-(For all use cases below, the **System** is the `AddressBook` and the **Actor** is the `user`, unless specified otherwise)
+(For all use cases below, the **System** is Tutoria and the **Actor** is the tutor.)
 
-**Use case: UC01 - Add a Student**
-
-**MSS**
-
-1.  User requests to add a student with specific details
-2.  Tutoria adds the student and indicates success
-
-    Use case ends.
-
-**Extensions**
-
-* 1a. User input is invalid
-    * 1a1. Tutoria shows the relevant error message
-
-    Use case ends.
-
-
-**Use case: UC02 - Viewing a day's schedule**
+**Use case: UC01 - Add a student**
 
 **MSS**
 
-1.  User requests to view the schedule of a specific date
-2.  Tutoria shows the relevant information occurring on that date
+1. The tutor enters `add-student` with the student's details.
+2. Tutoria validates the details and adds the student.
+3. Tutoria indicates success and displays the updated student list.
 
-    Use case ends.
+Use case ends.
 
 **Extensions**
 
-* 1a. User input is invalid
-    * 1a1. Tutoria shows the relevant error message
+* 1a. Required details are missing or invalid.
+    * 1a1. Tutoria displays an error and does not add the student.
 
-  Use case ends.
+    Use case resumes at step 1.
 
-* 2a. The date has no relevant information
-
-    * 2a1. Tutoria shows that nothing is occurring on that date
-
-    Use case ends.
-
-
-**Use case: Delete a person**
+**Use case: UC02 - Manage a parent contact**
 
 **MSS**
 
-1.  User requests to list persons
-2.  AddressBook shows a list of persons
-3.  User requests to delete a specific person in the list
-4.  AddressBook deletes the person
+1. The tutor enters `add-parent` with the parent's details and, optionally, a student link and requirements.
+2. Tutoria validates the details and creates the parent contact.
+3. Tutoria indicates success and displays the parent list.
 
-    Use case ends.
+Use case ends.
 
 **Extensions**
 
-* 2a. The list is empty.
+* 1a. The details are invalid or the selected student does not exist.
+    * 1a1. Tutoria displays an error and does not create the parent contact.
 
-  Use case ends.
+    Use case resumes at step 1.
 
-* 3a. The given index is invalid.
+**Use case: UC03 - Manage a student's task**
 
-    * 3a1. AddressBook shows an error message.
+**MSS**
 
-      Use case resumes at step 2.
+1. The tutor selects a student and enters `add-task` with a task description.
+2. Tutoria adds the task and displays the updated student details.
+3. The tutor may mark the task done or delete it using its task ID.
 
-*{More to be added}*
+Use case ends.
+
+**Extensions**
+
+* 1a. The student index or task description is invalid.
+    * 1a1. Tutoria displays an error and leaves the task list unchanged.
+
+    Use case resumes at step 1.
+
+**Use case: UC04 - Schedule a weekly session**
+
+**MSS**
+
+1. The tutor selects a student and enters `schedule-student` with a weekday and start and end times.
+2. Tutoria validates the student and time range, then adds the weekly session.
+3. The tutor enters `list-schedule` to view the sessions and their `Session #N` labels.
+
+Use case ends.
+
+**Extensions**
+
+* 1a. The student index or session details are invalid.
+    * 1a1. Tutoria displays an error and does not add the session.
+
+    Use case resumes at step 1.
+
+**Use case: UC05 - Record attendance**
+
+**MSS**
+
+1. The tutor enters `list-schedule` and chooses a `Session #N`.
+2. The tutor enters `mark-attendance` with that session number, a date and an outcome.
+3. Tutoria validates the date and session, records the outcome and confirms the lesson record.
+
+Use case ends.
+
+**Extensions**
+
+* 2a. The date is in the future or does not match the session's weekday.
+    * 2a1. Tutoria displays an error and does not change the history.
+
+    Use case resumes at step 1.
+
+* 2b. A lesson for the same student, date and exact time already exists for a different session or has no session link.
+    * 2b1. Tutoria identifies the existing lesson and does not create a duplicate.
+
+    Use case ends.
+
+**Use case: UC06 - Record an assessment and view student progress**
+
+**MSS**
+
+1. The tutor enters `record-assessment` with a student index, date, subject, category, title and mark.
+2. Tutoria validates the details and records the assessment.
+3. The tutor enters `stats-student` with the student's index and, optionally, a date range.
+4. Tutoria displays the student's attendance and assessment report for that range.
+
+Use case ends.
+
+**Extensions**
+
+* 1a. The assessment date or mark is invalid.
+    * 1a1. Tutoria displays an error and does not record the assessment.
+
+    Use case resumes at step 1.
+
+* 3a. The date range is invalid.
+    * 3a1. Tutoria displays an error and does not generate the report.
+
+    Use case resumes at step 3.
+
+**Use case: UC07 - Manage a reminder**
+
+**MSS**
+
+1. The tutor enters `add-reminder` with reminder text and, optionally, a date and time.
+2. Tutoria stores the reminder and confirms the operation.
+3. The tutor can use `list-reminders` to view reminders or `delete-reminder` to remove one by ID.
+
+Use case ends.
+
+**Use case: UC08 - Search for a contact**
+
+**MSS**
+
+1. The tutor enters `search` with a keyword.
+2. Tutoria filters the displayed student and parent lists to matching contacts and highlights matching text.
+
+Use case ends.
+
+**Use case: UC09 - Delete a student**
+
+**MSS**
+
+1. The tutor enters `list-students` and selects a student index.
+2. The tutor enters `delete-student` with that index.
+3. Tutoria deletes the student and their recurring sessions, while retaining dated lesson and assessment history.
+4. Tutoria confirms the deletion.
+
+Use case ends.
+
+**Extensions**
+
+* 2a. The student index is invalid.
+    * 2a1. Tutoria displays an error and does not delete a student.
+
+    Use case resumes at step 1.
 
 ### Non-Functional Requirements
 
-1.  Should work on any _mainstream OS_ as long as it has Java `25` or above installed.
-2.  Should be able to hold up to 1000 persons without noticeable sluggishness in performance for typical usage.
-3.  A user with above average typing speed for regular English text (i.e. not code, not system admin commands) should be able to accomplish most of the tasks faster using commands than using the mouse.
-
-*{More to be added}*
+1. Tutoria is built for Java `25`; running it requires Java `25` or later.
+2. Core workflows, including managing records and viewing schedules, can be performed through the command input without using a mouse.
 
 ### Glossary
 
-* **Contact**: A person record managed by the app; contacts may represent students, parents, or other people.
-* **Mainstream OS**: Windows, Linux, Unix, or macOS
-* **Parent**: A contact profile used to keep track of a student's parent's requirements.
-* **Private contact detail**: Personal information about a contact that is not meant to be shared with others.
-* **Schedule**: Activities or sessions associated with a specific date, potentially involving multiple students.
-* **Student**: A contact whose educational information, such as classes and deliverables, is tracked in the app.
-* **Tutor**: A user who manages student and parent information in the app.
+* **Assessment record**: A dated assessment result associated with a student's persistent identity.
+* **Lesson record**: A dated lesson outcome, optionally linked to the recurring session from which it was recorded.
+* **Parent contact**: A contact profile that can store requirements and link to a student.
+* **Scheduled session**: A recurring weekly time slot associated with a student.
+* **Session #N**: The stored schedule position used by `mark-attendance`; it is not necessarily the displayed row number.
+* **Student index**: The position of a student in the currently displayed student list.
+* **Tutor**: The user who manages student and parent information in Tutoria.
 
 --------------------------------------------------------------------------------------------------------------------
 
 ## **Appendix: Instructions for manual testing**
 
-Given below are instructions to test the app manually.
-
-<div markdown="span" class="alert alert-info">:information_source: **Note:** These instructions only provide a starting point for testers to work on;
-testers are expected to do more *exploratory* testing.
-
-</div>
+Use a test home folder for these procedures. Tutoria stores `preferences.json` and `data/addressbook.json` relative to
+the folder from which it is launched. Do not use a folder containing data you want to keep. Replace placeholders such
+as `<STUDENT_INDEX>` with values from the current list; do not type the angle brackets. Java `25` or later and the
+release JAR are required.
 
 ### Launch and shutdown
 
-1. Initial launch
+1. Copy `tutoria.jar` into a new, empty test home folder. Open a terminal in that folder and run
+   `java -jar tutoria.jar`.
+   Expected: The GUI opens with sample contacts. Preferences are stored in `preferences.json` and address-book data is
+   stored in `data/addressbook.json`, both relative to the test home folder.
+2. Resize and move the window, then close Tutoria. Run `java -jar tutoria.jar` again from the same folder.
+   Expected: The most recent window size and position are restored.
+3. Enter `exit`.
+   Expected: Tutoria closes.
 
+<<<<<<< Updated upstream
    1. Download the JAR file and copy it into an empty folder.
 
    2. Double-click the JAR file.<br>
       Expected: The GUI opens with a set of sample contacts. The window size may not be optimal.
+=======
+### Managing students and parents
 
-2. Saving window preferences
+1. Add a student with `add-student n/Manual Test p/91234560 e/manual@example.com a/1 Test St s/Mathematics`.
+   Expected: Tutoria adds the student and displays the updated student list.
+2. Run `list-students`, then edit the new student's subject with `edit-student <STUDENT_INDEX> s/Science`, using the
+   index shown in the list.
+   Expected: The subject changes and the other student details remain unchanged.
+3. Add a parent linked to that student with
+   `add-parent n/Manual Parent p/91234561 link/<STUDENT_INDEX> r/Call before lessons`.
+   Expected: The parent appears in `list-parents` with the requirement and student link. `view-child <PARENT_INDEX>`
+   selects the linked student.
+>>>>>>> Stashed changes
 
+### Tasks and reminders
+
+<<<<<<< Updated upstream
    1. Resize the window to an optimal size. Move the window to a different location. Close the window.
 
    2. Relaunch the app by double-clicking the JAR file.<br>
        Expected: The most recent window size and location are retained.
+=======
+1. Use a student index from `list-students`. Run `add-task <STUDENT_INDEX> task/Prepare revision`, then use the task ID
+   shown in the student details with `mark-task <STUDENT_INDEX> tid/<TASK_ID> status/done`.
+   Expected: The task is shown as done. Run `delete-task <STUDENT_INDEX> tid/<TASK_ID>` and verify it is removed.
+2. Run `add-reminder r/Manual test reminder`, then `list-reminders`.
+   Expected: The reminder appears in the list and in the reminder pop-up the next time Tutoria starts. Close the
+   pop-up; verify the reminder remains until removed with `delete-reminder <ID>`.
 
-3. _{ more test cases …​ }_
+### Scheduling and attendance
+>>>>>>> Stashed changes
 
+1. For a student without that weekly time slot, run `schedule-student <STUDENT_INDEX> day/Monday from/16-00 to/17-00`,
+   then `list-schedule`.
+   Expected: The weekly session appears. Use its `Session #N` label, not its row number.
+2. Replace `<DATE>` with a date on or before today that falls on the session's weekday. Run
+   `mark-attendance <SESSION_NUMBER> date/<DATE> status/completed`.
+   Expected: Tutoria records a lesson for that dated session. `list-lessons` shows the lesson.
+3. Run `mark-attendance` again with the same session and date but `status/absent`.
+   Expected: The existing lesson's outcome changes to absent; no second lesson is added.
+4. Try a future date or a date that falls on a different weekday.
+   Expected: Tutoria reports an error and leaves the lesson unchanged.
+
+<<<<<<< Updated upstream
 ### Managing Students and Parents
 1. Students
    1. Run `add-student n/John Tan p/91234567 e/johntan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Mathematics g/Sec 2`.
@@ -626,11 +656,23 @@ testers are expected to do more *exploratory* testing.
    Expected: `Mrs Tan` is removed from Tutoria.
 
 ### Deleting a person
+=======
+### Assessments and statistics
+>>>>>>> Stashed changes
 
-1. Deleting a person while all persons are being shown
+1. Record an assessment for a student, replacing `<DATE>` with a date that is not in the future:
+   `record-assessment <STUDENT_INDEX> date/<DATE> subject/Mathematics category/Test title/Manual score/80 max/100`.
+   Expected: The assessment appears in `list-assessments`.
+2. Run `stats from/<DATE> to/<DATE>` and `stats-student <STUDENT_INDEX> from/<DATE> to/<DATE>`.
+   Expected: The reports include the selected date range and the student's assessment for that date.
+3. Update the record with
+   `edit-assessment <RECORD_NUMBER> date/<DATE> subject/Mathematics category/Test title/Manual score/90 max/100`,
+   then run `list-assessments` again.
+   Expected: The selected assessment is updated. `delete-assessment <RECORD_NUMBER>` removes it.
 
-   Prerequisites: List all persons using the `list-students` command, with multiple persons in the list.
+### Deleting a student
 
+<<<<<<< Updated upstream
    1. Test case: `delete 1`<br>
       Expected: The first contact is deleted from the list. The status message shows the deleted contact's details.
 
@@ -641,6 +683,23 @@ testers are expected to do more *exploratory* testing.
       Expected: Similar to previous.
 
 2. _{ more test cases …​ }_
+=======
+1. Using the test student from the earlier steps, run `list-students` and note their displayed index.
+2. Run `delete-student <STUDENT_INDEX>`.
+   Expected: The student and recurring session disappear. Their lesson and assessment history remains in
+   `list-lessons` and `list-assessments`, labelled with the deleted student's name.
+3. Try `delete-student 0`, `delete-student x`, and an index larger than the displayed list.
+   Expected: Each command reports an error and deletes no student.
+
+### Search, undo and redo
+
+1. Run `search <NAME_OR_KEYWORD>` for a student or parent that exists in the list.
+   Expected: Matching student or parent details are displayed and matching text is highlighted. Run `list-students` or
+   `list-parents` to show the full corresponding list again.
+2. Add a uniquely named test student, then run `undo` followed by `list-students`.
+   Expected: The newly added student is absent. Run `redo` and `list-students`.
+   Expected: The student is restored.
+>>>>>>> Stashed changes
 
 ### Commands after searching
 This demonstrates how commands work if the list of students or parents is changed. `delete-student` is used as an example, but any command with `INDEX` applies.
@@ -649,6 +708,7 @@ This demonstrates how commands work if the list of students or parents is change
 3. Run `add-student n/Jane p/91234567 e/jane@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
 Expected: The list should contain the student `John` at index 1 and student `Jane` at index 2.
 
+<<<<<<< Updated upstream
 4. Run `search Jane`.
 Expected: This should make the list only contain the student `Jane` at index 1.
 
@@ -677,3 +737,16 @@ The details how Undo and Redo should work
    3. Run `add-student n/Jane Tan p/91234567 e/janetan@example.com a/Blk 22 Ang Mo Kio Ave 3 s/Math`.
    4. Run `redo`.
       Expected: Tutoria should indicate that there's nothing to redo, as the new `add-student` for `Jane Tan` overwrites the old `add-student` for `John Tan`.
+=======
+1. In the test home folder, add a uniquely named student and then close Tutoria. Relaunch it from the same folder and run
+   `list-students`.
+   Expected: The student is still present, confirming that data-changing commands are saved automatically.
+2. To test a missing data file, launch Tutoria from a separate empty test home folder with no `data/addressbook.json`.
+   Expected: Tutoria starts with sample contacts.
+3. To test a corrupted data file, first create a valid test dataset in a disposable test home folder and close Tutoria.
+   Back up that folder's `data/addressbook.json` outside the test home, then replace the test copy's contents with
+   invalid JSON and relaunch Tutoria from that folder.
+   Expected: Tutoria logs a loading warning and starts with an empty address book. Do not enter any commands: commands
+   that are not read-only, including commands that only display a list, save the in-memory address book and could
+   overwrite the invalid file. Close the window and restore the backup before continuing.
+>>>>>>> Stashed changes
