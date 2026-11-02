@@ -78,7 +78,7 @@ public class ScheduleGridTest {
         assertEquals(AXIS_WIDTH, card.getLayoutX(), 0.001);
         assertEquals(hourWidth(grid) / 2, card.getWidth(), 0.001);
         // the card still shows the session's real times
-        assertEquals("10:00 - 10:15", ((Label) card.getChildren().get(4)).getText());
+        assertEquals("10:00 - 10:15", ((Label) card.getChildren().get(3)).getText());
     }
 
     @Test
@@ -87,9 +87,8 @@ public class ScheduleGridTest {
                 session(ALICE, DayOfWeek.MONDAY, "10-00", "10-15"),
                 session(BENSON, DayOfWeek.MONDAY, "10-15", "10-30")));
         List<Region> cards = cards(grid);
-        double rowHeight = cards.get(0).getHeight();
 
-        assertEquals(cards.get(0).getLayoutY() + rowHeight, cards.get(1).getLayoutY(), 0.001);
+        assertEquals(bottomOf(cards.get(0)), cards.get(1).getLayoutY(), 0.001);
     }
 
     @Test
@@ -104,46 +103,76 @@ public class ScheduleGridTest {
 
     @Test
     public void layout_overlappingSessionsStackAndTheDayRowGrows() throws Exception {
-        ScheduleGrid grid = layoutGrid(List.of(
+        ScheduleGrid grid = layoutStyledGrid(List.of(
                 session(ALICE, DayOfWeek.MONDAY, "10-00", "12-00"),
                 session(BENSON, DayOfWeek.MONDAY, "11-00", "13-00"),
                 session(ALICE, DayOfWeek.TUESDAY, "10-00", "11-00")));
         List<Region> cards = cards(grid);
-        double rowHeight = cards.get(0).getHeight();
 
-        assertEquals(rowHeight, cards.get(1).getHeight(), 0.001);
-        assertEquals(cards.get(0).getLayoutY() + rowHeight, cards.get(1).getLayoutY(), 0.001);
-        // Tuesday starts below both Monday lanes
-        assertEquals(HEADER_HEIGHT + 2 * rowHeight, cards.get(2).getLayoutY(), 0.001);
+        assertEquals(bottomOf(cards.get(0)), cards.get(1).getLayoutY(), 0.001);
+        assertTrue(bottomOf(cards.get(1)) > HEADER_HEIGHT + grid.rowHeight());
+        assertEquals(bottomOf(cards.get(1)), cards.get(2).getLayoutY(), 0.001);
+    }
+
+    @Test
+    public void layout_cardsWithDifferentDetails_eachOnlyAsTallAsNeeded() throws Exception {
+        ScheduleGrid grid = layoutStyledGrid(List.of(
+                session(longAddressStudent(), DayOfWeek.MONDAY, "10-00", "11-00"),
+                session(BENSON, DayOfWeek.MONDAY, "11-00", "12-00"),
+                session(ALICE, DayOfWeek.TUESDAY, "10-00", "11-00")));
+        List<Region> cards = cards(grid);
+
+        for (Region card : cards) {
+            double neededHeight = FxTestSupport.runOnFxThread(() -> card.prefHeight(card.getWidth()));
+            assertEquals(Math.ceil(neededHeight), card.getHeight(), 0.001);
+        }
+        assertTrue(cards.get(1).getHeight() < cards.get(0).getHeight());
+        assertTrue(cards.get(2).getHeight() < grid.rowHeight());
+        assertEquals(HEADER_HEIGHT + cards.get(0).getHeight() + 6 * grid.rowHeight(), prefHeightOf(grid), 0.001);
+    }
+
+    @Test
+    public void layout_tallCardOverlappingSomeCards_othersNotPushedDown() throws Exception {
+        ScheduleGrid grid = layoutStyledGrid(List.of(
+                session(longAddressStudent(), DayOfWeek.MONDAY, "10-00", "11-00"),
+                session(BENSON, DayOfWeek.MONDAY, "10-00", "11-00"),
+                session(ALICE, DayOfWeek.MONDAY, "14-00", "15-00"),
+                session(BENSON, DayOfWeek.MONDAY, "14-00", "15-00")));
+        List<Region> cards = cards(grid);
+
+        assertEquals(bottomOf(cards.get(0)), cards.get(1).getLayoutY(), 0.001);
+        assertEquals(HEADER_HEIGHT, cards.get(2).getLayoutY(), 0.001);
+        assertEquals(bottomOf(cards.get(2)), cards.get(3).getLayoutY(), 0.001);
+    }
+
+    @Test
+    public void layout_gapAboveOverlappedCard_filledByCardThatFits() throws Exception {
+        ScheduleGrid grid = layoutStyledGrid(List.of(
+                session(ALICE, DayOfWeek.MONDAY, "10-00", "11-00"),
+                session(longAddressStudent(), DayOfWeek.MONDAY, "10-30", "12-00"),
+                session(BENSON, DayOfWeek.MONDAY, "11-00", "12-00")));
+        List<Region> cards = cards(grid);
+
+        assertEquals(bottomOf(cards.get(0)), cards.get(1).getLayoutY(), 0.001);
+        assertTrue(cards.get(2).getHeight() <= cards.get(0).getHeight());
+        assertEquals(HEADER_HEIGHT, cards.get(2).getLayoutY(), 0.001);
     }
 
     @Test
     public void layout_longDetails_dayRowGrowsToFitTheWrappedCard() throws Exception {
-        Person longAddressStudent = new PersonBuilder(ALICE).withAddress("Blk 123 Tampines Street 45, #12-345, "
-                + "Next to the Tampines Hub Community Centre and the Tampines Mall, Opposite the Bus Interchange, "
-                + "Above the Coffee Shop on the Second Floor").build();
-        ScheduleGrid grid = FxTestSupport.runOnFxThread(() -> {
-            ScheduleGrid styledGrid = new ScheduleGrid();
-            new Scene(styledGrid);
-            styledGrid.setViewport(1500, 600);
-            styledGrid.setSessions(List.of(
-                    session(longAddressStudent, DayOfWeek.MONDAY, "10-00", "11-00"),
-                    session(BENSON, DayOfWeek.TUESDAY, "10-00", "11-00")),
-                    student -> "#f6a05a", student -> student.getName().fullName);
-            styledGrid.applyCss();
-            styledGrid.layout();
-            return styledGrid;
-        });
+        ScheduleGrid grid = layoutStyledGrid(List.of(
+                session(longAddressStudent(), DayOfWeek.MONDAY, "10-00", "11-00"),
+                session(BENSON, DayOfWeek.TUESDAY, "10-00", "11-00")));
         List<Region> cards = cards(grid);
         Region monday = cards.get(0);
 
-        assertTrue(monday.getHeight() >= monday.prefHeight(monday.getWidth()));
+        assertTrue(monday.getHeight() > grid.rowHeight());
         assertTrue(monday.getHeight() > cards.get(1).getHeight());
-        assertEquals(HEADER_HEIGHT + monday.getHeight(), cards.get(1).getLayoutY(), 0.001);
+        assertEquals(bottomOf(monday), cards.get(1).getLayoutY(), 0.001);
     }
 
     @Test
-    public void layout_touchingSessionsShareTheFirstLane() throws Exception {
+    public void layout_touchingSessions_sitSideBySide() throws Exception {
         ScheduleGrid grid = layoutGrid(List.of(
                 session(ALICE, DayOfWeek.MONDAY, "10-00", "11-00"),
                 session(BENSON, DayOfWeek.MONDAY, "11-00", "12-00")));
@@ -167,11 +196,10 @@ public class ScheduleGridTest {
     @Test
     public void prefSize_defaultRangeHasEightHoursAndSevenDays() throws Exception {
         ScheduleGrid grid = layoutGrid(List.of(session(ALICE, DayOfWeek.MONDAY, "10-00", "11-00")));
-        Region card = cards(grid).get(0);
 
         double hourWidth = hourWidth(grid);
         assertEquals(AXIS_WIDTH + 8 * hourWidth, grid.prefWidth(-1), 0.001);
-        assertEquals(HEADER_HEIGHT + 7 * card.getHeight(), grid.prefHeight(-1), 0.001);
+        assertEquals(HEADER_HEIGHT + 7 * grid.rowHeight(), prefHeightOf(grid), 0.001);
     }
 
     @Test
@@ -223,6 +251,32 @@ public class ScheduleGridTest {
             grid.layout();
             return grid;
         });
+    }
+
+    private static ScheduleGrid layoutStyledGrid(List<ScheduledSession> sessions) throws Exception {
+        return FxTestSupport.runOnFxThread(() -> {
+            ScheduleGrid grid = new ScheduleGrid();
+            new Scene(grid);
+            grid.setViewport(1500, 600);
+            grid.setSessions(sessions, student -> "#f6a05a", student -> student.getName().fullName);
+            grid.applyCss();
+            grid.layout();
+            return grid;
+        });
+    }
+
+    private static Person longAddressStudent() {
+        return new PersonBuilder(ALICE).withAddress("Blk 123 Tampines Street 45, #12-345, "
+                + "Next to the Tampines Hub Community Centre and the Tampines Mall, Opposite the Bus Interchange, "
+                + "Above the Coffee Shop on the Second Floor").build();
+    }
+
+    private static double prefHeightOf(ScheduleGrid grid) throws Exception {
+        return FxTestSupport.runOnFxThread(() -> grid.prefHeight(-1));
+    }
+
+    private static double bottomOf(Region card) {
+        return card.getLayoutY() + card.getHeight();
     }
 
     private static List<Region> cards(ScheduleGrid grid) {

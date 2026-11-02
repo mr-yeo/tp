@@ -149,8 +149,8 @@ public class SchedulePanelTest {
         });
 
         assertNotNull(scene(panel));
-        assertTrue(grid.prefWidth(-1) > 0);
-        assertTrue(grid.prefHeight(-1) > 0);
+        assertTrue(FxTestSupport.runOnFxThread(() -> grid.prefWidth(-1)) > 0);
+        assertTrue(FxTestSupport.runOnFxThread(() -> grid.prefHeight(-1)) > 0);
     }
 
     @Test

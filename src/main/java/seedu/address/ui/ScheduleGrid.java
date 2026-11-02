@@ -27,8 +27,8 @@ import seedu.address.model.schedule.ScheduledSession;
 /**
  * A weekly timetable with one row per day and time running left to right. Each session is a card that starts
  * and ends at its exact times, except that a session shorter than 30 minutes gets a 30-minute card so its
- * details stay readable. Overlapping cards on the same day are stacked in extra lanes, which makes that day's
- * row taller. Details too long for one line wrap, and that day's row grows so every card shows in full.
+ * details stay readable. Each card is only as tall as its details need, and sits just below any earlier card
+ * it overlaps on the same day. A day's row grows when its cards need more room.
  * The viewport shows five days and {@code VISIBLE_HOURS} hours; the rest is reached by scrolling.
  * The day labels and time header stay pinned to the viewport edges.
  */
@@ -58,7 +58,6 @@ class ScheduleGrid extends Pane {
     private final List<Line> hourLines = new ArrayList<>();
     private final List<Line> dayLines = new ArrayList<>();
     private final Region corner = new Region();
-    private final int[] dayLanes = new int[DAYS];
     private double viewportWidth;
     private double viewportHeight;
     private double offsetX;
@@ -91,7 +90,7 @@ class ScheduleGrid extends Pane {
         return Math.max(MIN_HOUR_WIDTH, Math.floor((viewportWidth - AXIS_WIDTH) / visibleHours) - FIT_MARGIN);
     }
 
-    /** Returns the standard height of one lane in a day row. A day's lanes grow taller if a card needs more room. */
+    /** Returns the standard height of a day row. A day's row grows taller if its cards need more room. */
     double rowHeight() {
         return Math.max(MIN_ROW_HEIGHT, Math.floor((viewportHeight - HEADER_HEIGHT) / VISIBLE_DAYS) - FIT_MARGIN);
     }
@@ -108,7 +107,6 @@ class ScheduleGrid extends Pane {
         hourLabels.clear();
         hourLines.clear();
         dayLines.clear();
-        Arrays.fill(dayLanes, 1);
         Map<String, Integer> sessionNumbers = new HashMap<>();
         for (int i = 0; i < sessions.size(); i++) {
             sessionNumbers.put(sessions.get(i).getSessionId(), i + 1);
@@ -183,39 +181,20 @@ class ScheduleGrid extends Pane {
         return cardEnd;
     }
 
-    /** Assigns each session in a day to a lane so that overlapping cards never share a lane. */
+    /** Creates a card for each session in a day. The sessions must be sorted by start time. */
     private void placeDay(int dayIndex, List<ScheduledSession> daySessions, Function<Person, String> colourOf,
             Function<Person, String> titleOf, ToIntFunction<ScheduledSession> numberOf) {
-        List<Integer> laneEnds = new ArrayList<>();
-        int clusterEnd = -1;
-
         for (ScheduledSession session : daySessions) {
             int start = startMinutes(session);
             int end = cardEndMinutes(session);
             if (end > endMinutes(session)) {
                 logger.fine("Lengthened the card of short session " + session.getSessionId() + " to fit its details");
             }
-            if (clusterEnd >= 0 && start >= clusterEnd) {
-                laneEnds = new ArrayList<>();
-                clusterEnd = -1;
-            }
-
-            int lane = 0;
-            while (lane < laneEnds.size() && laneEnds.get(lane) > start) {
-                lane++;
-            }
-            if (lane == laneEnds.size()) {
-                laneEnds.add(end);
-            } else {
-                laneEnds.set(lane, end);
-            }
-            clusterEnd = Math.max(clusterEnd, end);
-            dayLanes[dayIndex] = Math.max(dayLanes[dayIndex], laneEnds.size());
 
             Person student = session.getStudent();
             ScheduleSessionCard card = new ScheduleSessionCard(session, colourOf.apply(student),
                     titleOf.apply(student), numberOf.applyAsInt(session));
-            placements.add(new Placement(card, dayIndex, start, end, lane));
+            placements.add(new Placement(card, dayIndex, start, end));
             getChildren().add(card);
         }
     }
@@ -230,24 +209,36 @@ class ScheduleGrid extends Pane {
         return width;
     }
 
-    /** Returns the lane height of each day, raised above the standard height when a card needs more room. */
-    private double[] laneHeights() {
-        double[] laneHeights = new double[DAYS];
-        Arrays.fill(laneHeights, rowHeight());
-        for (Placement placement : placements) {
-            double cardHeight = Math.ceil(placement.card.prefHeight(cardWidth(placement)));
-            laneHeights[placement.dayIndex] = Math.max(laneHeights[placement.dayIndex], cardHeight);
+    /** Sizes each card to fit its details, stacks it below cards it overlaps and returns the row heights. */
+    private double[] stackCards() {
+        double[] dayHeights = new double[DAYS];
+        Arrays.fill(dayHeights, rowHeight());
+        for (int i = 0; i < placements.size(); i++) {
+            Placement placement = placements.get(i);
+            List<Placement> overlapping = placements.subList(0, i).stream()
+                    .filter(placement::isOverlappingInTime).toList();
+            placement.height = Math.ceil(placement.card.prefHeight(cardWidth(placement)));
+            placement.top = highestFreeTop(placement.height, overlapping);
+            assert overlapping.stream().noneMatch(other -> other.isCovering(placement.top, placement.bottom()))
+                    : "A card must not cover a card it overlaps in time";
+            dayHeights[placement.dayIndex] = Math.max(dayHeights[placement.dayIndex], placement.bottom());
         }
-        return laneHeights;
+        return dayHeights;
+    }
+
+    /** Returns the highest top at which a card {@code height} tall covers none of the {@code overlapping} cards. */
+    private static double highestFreeTop(double height, List<Placement> overlapping) {
+        double top = 0;
+        for (Placement other : overlapping.stream().sorted(Comparator.comparingDouble(card -> card.top)).toList()) {
+            if (other.isCovering(top, top + height)) {
+                top = other.bottom();
+            }
+        }
+        return top;
     }
 
     private double contentHeight() {
-        double[] laneHeights = laneHeights();
-        double total = HEADER_HEIGHT;
-        for (int i = 0; i < DAYS; i++) {
-            total += dayLanes[i] * laneHeights[i];
-        }
-        return total;
+        return HEADER_HEIGHT + Arrays.stream(stackCards()).sum();
     }
 
     @Override
@@ -267,10 +258,10 @@ class ScheduleGrid extends Pane {
 
     @Override
     protected void layoutChildren() {
-        double[] laneHeights = laneHeights();
+        double[] dayHeights = stackCards();
         double hourWidth = hourWidth();
         double right = AXIS_WIDTH + (rangeEndHour - rangeStartHour) * hourWidth;
-        double bottom = contentHeight();
+        double bottom = HEADER_HEIGHT + Arrays.stream(dayHeights).sum();
 
         for (int i = 0; i < hourLines.size(); i++) {
             double x = AXIS_WIDTH + i * hourWidth;
@@ -286,7 +277,7 @@ class ScheduleGrid extends Pane {
         double y = HEADER_HEIGHT;
         for (int i = 0; i < DAYS; i++) {
             rowTops[i] = y;
-            double height = dayLanes[i] * laneHeights[i];
+            double height = dayHeights[i];
             dayLabels.get(i).resizeRelocate(offsetX, y, AXIS_WIDTH, height);
             Line line = dayLines.get(i);
             line.setStartX(0);
@@ -299,28 +290,41 @@ class ScheduleGrid extends Pane {
         for (Placement placement : placements) {
             double left = xOf(placement.start);
             double width = cardWidth(placement);
-            double laneHeight = laneHeights[placement.dayIndex];
-            double top = rowTops[placement.dayIndex] + placement.lane * laneHeight;
-            placement.card.resizeRelocate(left, top, width, laneHeight);
-            placement.card.setClip(new Rectangle(width, laneHeight));
+            double top = rowTops[placement.dayIndex] + placement.top;
+            placement.card.resizeRelocate(left, top, width, placement.height);
+            placement.card.setClip(new Rectangle(width, placement.height));
         }
         corner.resizeRelocate(offsetX, offsetY, AXIS_WIDTH, HEADER_HEIGHT);
     }
 
-    /** A card together with its position data, in minutes since midnight. */
+    /** A card with its start and end in minutes since midnight, and its top and height in its day's row. */
     private static class Placement {
         private final Region card;
         private final int dayIndex;
         private final int start;
         private final int end;
-        private final int lane;
+        private double top;
+        private double height;
 
-        Placement(Region card, int dayIndex, int start, int end, int lane) {
+        Placement(Region card, int dayIndex, int start, int end) {
             this.card = card;
             this.dayIndex = dayIndex;
             this.start = start;
             this.end = end;
-            this.lane = lane;
+        }
+
+        double bottom() {
+            return top + height;
+        }
+
+        /** Returns true if both cards are on the same day and their times overlap. Touching times do not overlap. */
+        boolean isOverlappingInTime(Placement other) {
+            return dayIndex == other.dayIndex && start < other.end && other.start < end;
+        }
+
+        /** Returns true if this card covers any part of its row between the heights {@code from} and {@code to}. */
+        boolean isCovering(double from, double to) {
+            return top < to && from < bottom();
         }
     }
 }

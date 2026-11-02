@@ -33,7 +33,7 @@ public class ScheduleSessionCardTest {
         assertEquals("Student: 1. Alice Pauline", labelAt(card, 0).getText());
         assertEquals(ALICE.getSubject().value + " | " + ALICE.getGradeLevel().value, labelAt(card, 1).getText());
         assertEquals(ALICE.getAddress().value, labelAt(card, 2).getText());
-        assertEquals("10:00 - 12:30", labelAt(card, 4).getText());
+        assertEquals("10:00 - 12:30", labelAt(card, 3).getText());
         assertTrue(card.getStyle().contains("#f6a05a"));
     }
 
