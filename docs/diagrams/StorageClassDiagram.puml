@@ -1,5 +1,6 @@
 @startuml
 !include style.puml
+skinparam nodesep 25
 skinparam arrowThickness 1.1
 skinparam arrowColor STORAGE_COLOR
 skinparam classBackgroundColor STORAGE_COLOR
@@ -42,10 +43,13 @@ StorageManager -down-> "1" JsonAddressBookStorage
 JsonAddressBookStorage ..> JsonSerializableAddressBook
 JsonSerializableAddressBook --> "*" JsonAdaptedPerson
 JsonSerializableAddressBook --> "*" JsonAdaptedParentContact
-JsonSerializableAddressBook --> "*" JsonAdaptedScheduledSession
-JsonSerializableAddressBook --> "*" JsonAdaptedReminder
+JsonSerializableAddressBook ---> "*" JsonAdaptedScheduledSession
+JsonSerializableAddressBook ----> "*" JsonAdaptedReminder
 JsonAdaptedPerson --> "*" JsonAdaptedTag
 JsonAdaptedPerson --> "*" JsonAdaptedTask
+
+JsonAdaptedParentContact -[hidden]down- JsonAdaptedScheduledSession
+JsonAdaptedScheduledSession -[hidden]down- JsonAdaptedReminder
 
 Storage .right.> Model
 SnapshotManager ..> Model

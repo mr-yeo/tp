@@ -1,9 +1,9 @@
 @startuml
 !include style.puml
+skinparam nodesep 25
 skinparam arrowThickness 1.1
 skinparam arrowColor LOGIC_COLOR_T4
 skinparam classBackgroundColor LOGIC_COLOR
-left to right direction
 
 package Logic {
     Class "<<interface>>\nLogic" as Logic
@@ -55,10 +55,10 @@ AddReminderCommandParser .up.|> Parser
 ScheduleStudentCommandParser .up.|> Parser
 HistoryCommandParser .up.|> Parser
 
-AddContactCommandParser ..> AddContactCommand : <<create>>
-AddReminderCommandParser ..> AddReminderCommand : <<create>>
-ScheduleStudentCommandParser ..> ScheduleStudentCommand : <<create>>
-HistoryCommandParser ..> HistoryCommand : <<create>>
+AddContactCommandParser .right.> AddContactCommand : <<create>>
+AddReminderCommandParser .right.> AddReminderCommand : <<create>>
+ScheduleStudentCommandParser .right.> ScheduleStudentCommand : <<create>>
+HistoryCommandParser .right.> HistoryCommand : <<create>>
 
 AddContactCommand -up-|> Command
 AddReminderCommand -up-|> Command
@@ -75,7 +75,7 @@ ScheduleStudentCommand -[hidden]down- HistoryCommand
 
 Storage --[hidden] Model
 Command .[hidden]up.> Storage
-Command .right.> Model
+Command .down.> Model
 Logic ..> CommandResult
 LogicManager .down.> CommandResult
 Command .up.> CommandResult
