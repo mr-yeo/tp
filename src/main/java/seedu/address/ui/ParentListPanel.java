@@ -30,6 +30,7 @@ public class ParentListPanel extends UiPart<Region> {
 
         personListView.setItems(contacts);
         personListView.setCellFactory(view -> new ParentListViewCell());
+        ListViewUtil.enableCompleteLastItemScroll(personListView);
     }
 
     /**
